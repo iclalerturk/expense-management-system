@@ -1,0 +1,170 @@
+[
+    {
+        "label": "sqlite3",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "sqlite3",
+        "description": "sqlite3",
+        "detail": "sqlite3",
+        "documentation": {}
+    },
+    {
+        "label": "os",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "os",
+        "description": "os",
+        "detail": "os",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "QtCore",
+        "importPath": "PyQt5",
+        "description": "PyQt5",
+        "isExtraImport": true,
+        "detail": "PyQt5",
+        "documentation": {}
+    },
+    {
+        "label": "QtGui",
+        "importPath": "PyQt5",
+        "description": "PyQt5",
+        "isExtraImport": true,
+        "detail": "PyQt5",
+        "documentation": {}
+    },
+    {
+        "label": "QtWidgets",
+        "importPath": "PyQt5",
+        "description": "PyQt5",
+        "isExtraImport": true,
+        "detail": "PyQt5",
+        "documentation": {}
+    },
+    {
+        "label": "QtCore",
+        "importPath": "PyQt5",
+        "description": "PyQt5",
+        "isExtraImport": true,
+        "detail": "PyQt5",
+        "documentation": {}
+    },
+    {
+        "label": "QtGui",
+        "importPath": "PyQt5",
+        "description": "PyQt5",
+        "isExtraImport": true,
+        "detail": "PyQt5",
+        "documentation": {}
+    },
+    {
+        "label": "QtWidgets",
+        "importPath": "PyQt5",
+        "description": "PyQt5",
+        "isExtraImport": true,
+        "detail": "PyQt5",
+        "documentation": {}
+    },
+    {
+        "label": "PyQt5.QtWidgets",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "QTableWidgetItem",
+        "importPath": "PyQt5.QtWidgets",
+        "description": "PyQt5.QtWidgets",
+        "isExtraImport": true,
+        "detail": "PyQt5.QtWidgets",
+        "documentation": {}
+    },
+    {
+        "label": "sys",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "sys",
+        "description": "sys",
+        "detail": "sys",
+        "documentation": {}
+    },
+    {
+        "label": "Database",
+        "importPath": "models.database",
+        "description": "models.database",
+        "isExtraImport": true,
+        "detail": "models.database",
+        "documentation": {}
+    },
+    {
+        "label": "Database",
+        "importPath": "models.database",
+        "description": "models.database",
+        "isExtraImport": true,
+        "detail": "models.database",
+        "documentation": {}
+    },
+    {
+        "label": "LoginUi",
+        "importPath": "screens.loginUi",
+        "description": "screens.loginUi",
+        "isExtraImport": true,
+        "detail": "screens.loginUi",
+        "documentation": {}
+    },
+    {
+        "label": "DashboardUI",
+        "importPath": "screens.dashboard",
+        "description": "screens.dashboard",
+        "isExtraImport": true,
+        "detail": "screens.dashboard",
+        "documentation": {}
+    },
+    {
+        "label": "Database",
+        "kind": 6,
+        "importPath": "models.database",
+        "description": "models.database",
+        "peekOfCode": "class Database:\n    def __init__(self, db_path=None):\n        if db_path is None:\n            db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gider.db')\n        self.db_path = db_path\n        self.conn = sqlite3.connect(self.db_path)\n        self.conn.row_factory = sqlite3.Row\n        self.cursor = self.conn.cursor()\n    def authUser(self, email, sifre):\n        try:",
+        "detail": "models.database",
+        "documentation": {}
+    },
+    {
+        "label": "DashboardUI",
+        "kind": 6,
+        "importPath": "screens.dashboard",
+        "description": "screens.dashboard",
+        "peekOfCode": "class DashboardUI(object):\n    def setupUi(self, Form):\n        Form.setObjectName(\"Form\")\n        Form.resize(1100, 700)\n        Form.setStyleSheet('''\n            QWidget {\n                font-family: 'Segoe UI', Arial;\n                color: #333;\n                background-color: #E3E4E0;\n            }",
+        "detail": "screens.dashboard",
+        "documentation": {}
+    },
+    {
+        "label": "LoginUi",
+        "kind": 6,
+        "importPath": "screens.loginUi",
+        "description": "screens.loginUi",
+        "peekOfCode": "class LoginUi(object):\n        def setupUi(self, Form):\n                Form.setObjectName(\"ÇalışanGirişi\")\n                Form.resize(1100, 700)\n                Form.setMinimumSize(900, 650)\n                Form.setWindowTitle(\"Kurumsal Yönetim Sistemi\")\n                # ana layout\n                self.mainLayout = QtWidgets.QVBoxLayout(Form)\n                self.mainLayout.setContentsMargins(30, 30, 30, 30)\n                self.mainLayout.setSpacing(0)",
+        "detail": "screens.loginUi",
+        "documentation": {}
+    },
+    {
+        "label": "giderApp",
+        "kind": 6,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "class giderApp(QtWidgets.QWidget, LoginUi):\n    def __init__(self):\n        super(giderApp, self).__init__()\n        self.setupUi(self)\n        self.db = Database()  # veritabanı nesnesi\n        self.userMailText.returnPressed.connect(self.on_login_click)\n        self.passwordText.returnPressed.connect(self.on_login_click)\n        self.loginButton.clicked.connect(self.on_login_click)\n    def on_login_click(self):\n        email = self.userMailText.text()",
+        "detail": "main",
+        "documentation": {}
+    }
+]
