@@ -2,6 +2,10 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QTableWidgetItem
 from models.database import Database
+from collections import defaultdict
+import numpy as np
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 
 class DashboardUI(object):
     def setupUi(self, Form):
@@ -356,6 +360,74 @@ class DashboardUI(object):
         self.employees_layout = QtWidgets.QVBoxLayout(self.employees_page)
         self.employees_layout.setContentsMargins(30, 30, 30, 30)
 
+
+        self.raporlama_page = QtWidgets.QWidget()
+        self.raporlama_page.setObjectName("employees_page")
+        self.raporlama_layout = QtWidgets.QVBoxLayout(self.raporlama_page)
+        self.raporlama_layout.setContentsMargins(30, 30, 30, 30)
+        self.button_layout = QtWidgets.QHBoxLayout()
+
+        self.button1 = QtWidgets.QPushButton("Birim Bazında Grafikler")
+        self.button1.setStyleSheet('''
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                padding: 10px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+        ''')
+        self.button2 = QtWidgets.QPushButton("Kalem Bazında Grafikler")
+        self.button2.setStyleSheet('''
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                padding: 10px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+        ''')
+        self.button3 = QtWidgets.QPushButton("Kişi Bazlında Grafikler")
+        self.button3.setStyleSheet('''
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                padding: 10px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+        ''')
+        self.button_layout.addWidget(self.button1)
+        self.button_layout.addWidget(self.button2)
+        self.button_layout.addWidget(self.button3)
+
+        # Grafik alanı için boş bir widget (şimdilik)
+        self.graphic_area = QtWidgets.QFrame()
+        self.graphic_area.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.graphic_area.setMinimumHeight(300)  # İstersen yüksekliği sabitleyebilirsin
+
+        # Ana layout'a ekle
+        self.raporlama_layout.addLayout(self.button_layout)
+        self.raporlama_layout.addWidget(self.graphic_area)
+
+        self.graphic_layout = QtWidgets.QVBoxLayout(self.graphic_area)
+        self.canvas = FigureCanvas(Figure(figsize=(6, 4)))
+        self.ax = self.canvas.figure.add_subplot(111)
+        self.graphic_layout.addWidget(self.canvas)
+
+
         # Örnek çalışanlar tablosu
         self.employees_table = QtWidgets.QTableWidget()
         self.employees_table.setColumnCount(5)
@@ -383,6 +455,8 @@ class DashboardUI(object):
 
         # employees_page'i stacked_widget'e ekle
         self.stacked_widget.addWidget(self.employees_page)
+        # raporlama_page'i stacked_widget'e ekle
+        self.stacked_widget.addWidget(self.raporlama_page)
         # içerikleri ana içerik layouta ekle
         self.content_layout.addWidget(self.top_bar)
         self.content_layout.addWidget(self.stacked_widget)
@@ -394,11 +468,64 @@ class DashboardUI(object):
         self.btn_home.setChecked(True)
         self.btn_home.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.content_page))
         self.btn_employees.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.employees_page))
-
+        self.btn_reports.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.raporlama_page))
+        self.button1.clicked.connect(lambda: self.update_graph('birim'))
+        self.button2.clicked.connect(lambda: self.update_graph('kalem'))
+        self.button3.clicked.connect(lambda: self.update_graph('kisi'))
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
-    
-    #arayüzde kullanılan metodlar:
+
+    def update_graph(self, kategori):
+        try:
+            db = Database()
+            data = db.grafik_verisi_getir(kategori)
+            
+            if not data:
+                QtWidgets.QMessageBox.warning(self.raporlama_page, "Uyarı", f"{kategori.capitalize()} için veri bulunamadı.")
+                return
+                
+            # Mevcut grafiği temizle
+            self.ax.clear()
+            
+            # Tüm yılları topla ve sırala
+            all_years = set()
+            for entity_data in data.values():
+                all_years.update(entity_data.keys())
+            all_years = sorted(all_years)
+            
+            # Her bir varlık için yıllara göre verileri düzenle
+            bars = []
+            bar_width = 0.8 / len(data)  # Çubukların genişliği
+            index = np.arange(len(all_years))
+            
+            # Her bir varlık için çubuk ekle
+            for i, (entity_name, yearly_data) in enumerate(data.items()):
+                values = [yearly_data.get(year, 0) for year in all_years]
+                position = index + i * bar_width
+                bar = self.ax.bar(position, values, bar_width, label=entity_name)
+                bars.append(bar)
+            
+            # Eksen etiketleri ve başlık
+            kategori_basliklari = {
+                'birim': 'Birim Bazında Yıllık Harcamalar',
+                'kalem': 'Harcama Kalemi Bazında Yıllık Harcamalar',
+                'kisi': 'Kişi Bazında Yıllık Harcamalar'
+            }
+            
+            self.ax.set_xlabel('Yıl')
+            self.ax.set_ylabel('Toplam Harcama (TL)')
+            self.ax.set_title(kategori_basliklari.get(kategori, 'Yıllık Harcamalar'))
+            self.ax.set_xticks(index + bar_width * (len(data) - 1) / 2)
+            self.ax.set_xticklabels(all_years)
+            self.ax.legend()
+            
+            # Grafiği güncelle
+            self.canvas.draw()
+            
+        except Exception as e:
+            # Use a valid parent widget (self.raporlama_page is a QWidget)
+            QtWidgets.QMessageBox.critical(self.raporlama_page, "Hata", f"Grafik güncellenirken bir hata oluştu: {str(e)}")
+
     def create_menu_button(self, text, icon_path):
         button = QtWidgets.QPushButton(text)
         button.setIcon(QtGui.QIcon(icon_path))
@@ -522,7 +649,6 @@ class DashboardUI(object):
                 for col_index in range(self.employees_table.columnCount()):
                     item = self.employees_table.item(row_index, col_index)
                     item.setBackground(QtGui.QColor(245, 245, 245))  # Alternatif renk
-   
 
     def add_budget_item(self):
         """
@@ -858,6 +984,3 @@ class DashboardUI(object):
             db.delete_limit_butce(kalem_adi, birim_adi, limit_butce)
             self.load_budget_data()
             QtWidgets.QMessageBox.information(None, "Başarılı", "Bütçe başarıyla silindi.")
-
-
-    
