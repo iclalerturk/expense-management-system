@@ -39,7 +39,11 @@ class DashboardUI(object):
         self.main_layout = QtWidgets.QHBoxLayout(Form)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
-        
+        self.stacked_widget = QtWidgets.QStackedWidget()
+        self.stacked_widget.setObjectName("stacked_widget")
+        self.stacked_widget.setStyleSheet('''
+            background-color: #f8f9fa;
+        ''')
         # ---- SOL MENÜ ----
         self.sidebar_widget = QtWidgets.QWidget()
         self.sidebar_widget.setObjectName("sidebar_widget")
@@ -345,16 +349,52 @@ class DashboardUI(object):
         self.page_layout.addLayout(self.grid_layout)
         self.page_layout.addSpacing(20)
         
+        self.stacked_widget.addWidget(self.content_page)
+        # Yeni sayfa: Çalışanlar Sayfası
+        self.employees_page = QtWidgets.QWidget()
+        self.employees_page.setObjectName("employees_page")
+        self.employees_layout = QtWidgets.QVBoxLayout(self.employees_page)
+        self.employees_layout.setContentsMargins(30, 30, 30, 30)
+
+        # Örnek çalışanlar tablosu
+        self.employees_table = QtWidgets.QTableWidget()
+        self.employees_table.setColumnCount(5)
+        self.employees_table.setHorizontalHeaderLabels(["Calışan Id","Ad", "Soyad", "Departman", "İletişim"])
+        self.employees_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+        self.populate_employee_table()  # Çalışanları veritabanından alıp tabloya ekleyecek bir metod
+        self.employees_table.setStyleSheet('''
+            QTableWidget {
+                background-color: white;
+                border-radius: 20px;
+                border: 1px solid #ddd;
+                padding: 5px;  /* İç boşluk ekleyerek içeriğin çerçeveye yapışmasını önle */
+            }
+            QTableWidget::item {
+                padding: 10px;
+            }
+            QTableWidget QHeaderView::section {
+                background-color: transparent;
+            }
+            QTableWidget::viewport {  /* İç içerik alanını yuvarlat */
+                border-radius: 18px;  /* Ana çerçevenin radius'undan biraz küçük */
+            }
+        ''')
+        self.employees_layout.addWidget(self.employees_table)
+
+        # employees_page'i stacked_widget'e ekle
+        self.stacked_widget.addWidget(self.employees_page)
         # içerikleri ana içerik layouta ekle
         self.content_layout.addWidget(self.top_bar)
-        self.content_layout.addWidget(self.content_page)
+        self.content_layout.addWidget(self.stacked_widget)
         
         # ana widgetları main layouta ekle
         self.main_layout.addWidget(self.sidebar_widget)
         self.main_layout.addWidget(self.content_widget)
         
         self.btn_home.setChecked(True)
-        
+        self.btn_home.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.content_page))
+        self.btn_employees.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.employees_page))
+
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
     
@@ -454,7 +494,36 @@ class DashboardUI(object):
             self.budget_table.setItem(row_index, 4, kalan_item)
             self.budget_table.setItem(row_index, 5, limit_butce_item)
             self.budget_table.setItem(row_index, 6, esik_deger_item)
-            
+
+    def populate_employee_table(self):
+        db = Database()
+        data = db.get_all_calisanlar()
+        self.employees_table.setRowCount(len(data))
+
+        for row_index, row in enumerate(data):
+            calisan_id = QTableWidgetItem(str(row[0]))  # calisanId
+            isim = QTableWidgetItem(str(row[1]))        # isim
+            soyisim = QTableWidgetItem(str(row[2]))     # soyisim
+            birim = QTableWidgetItem(str(row[3]))       # birimIsmi
+            email = QTableWidgetItem(str(row[4]))       # email
+
+            self.employees_table.setItem(row_index, 0, calisan_id)
+            self.employees_table.setItem(row_index, 1, isim)
+            self.employees_table.setItem(row_index, 2, soyisim)
+            self.employees_table.setItem(row_index, 3, birim)
+            self.employees_table.setItem(row_index, 4, email)
+
+            # Alternatif satır renkleme
+            if row_index % 2 == 0:
+                for col_index in range(self.employees_table.columnCount()):
+                    item = self.employees_table.item(row_index, col_index)
+                    item.setBackground(QtGui.QColor(236, 240, 241))  # Beyaz
+            else:
+                for col_index in range(self.employees_table.columnCount()):
+                    item = self.employees_table.item(row_index, col_index)
+                    item.setBackground(QtGui.QColor(245, 245, 245))  # Alternatif renk
+   
+
     def add_budget_item(self):
         """
         Yeni limit bütçe eklemek için bir dialog gösterir ve bütçeyi veritabanına ekler
@@ -789,3 +858,6 @@ class DashboardUI(object):
             db.delete_limit_butce(kalem_adi, birim_adi, limit_butce)
             self.load_budget_data()
             QtWidgets.QMessageBox.information(None, "Başarılı", "Bütçe başarıyla silindi.")
+
+
+    
