@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1192</width>
-    <height>648</height>
+    <width>1049</width>
+    <height>534</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -28,6 +28,9 @@
      <height>16777215</height>
     </size>
    </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: #080121;</string>
+   </property>
    <property name="frameShape">
     <enum>QFrame::Shape::StyledPanel</enum>
    </property>
@@ -35,6 +38,15 @@
     <enum>QFrame::Shadow::Raised</enum>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
     <item>
      <widget class="QFrame" name="topTextFrame">
       <property name="minimumSize">
@@ -49,6 +61,12 @@
         <height>16777215</height>
        </size>
       </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: #e6e4e3;
+
+
+</string>
+      </property>
       <property name="frameShape">
        <enum>QFrame::Shape::StyledPanel</enum>
       </property>
@@ -56,6 +74,18 @@
        <enum>QFrame::Shadow::Raised</enum>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_6">
+       <property name="spacing">
+        <number>6</number>
+       </property>
+       <property name="leftMargin">
+        <number>9</number>
+       </property>
+       <property name="rightMargin">
+        <number>9</number>
+       </property>
+       <property name="bottomMargin">
+        <number>9</number>
+       </property>
        <item>
         <widget class="QLabel" name="starTechIcon">
          <property name="text">
@@ -75,6 +105,9 @@
            <stylestrategy>PreferAntialias</stylestrategy>
           </font>
          </property>
+         <property name="styleSheet">
+          <string notr="true">color: black;</string>
+         </property>
          <property name="text">
           <string>StarTech</string>
          </property>
@@ -90,6 +123,9 @@
            <pointsize>11</pointsize>
            <bold>true</bold>
           </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">color:black;</string>
          </property>
          <property name="text">
           <string>Raporlama Ekranı</string>
@@ -112,7 +148,21 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
-        <widget class="QComboBox" name="graphTypeComboBox"/>
+        <widget class="QLabel" name="label_5">
+         <property name="text">
+          <string>Grafik Türü</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignBottom|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="graphTypeComboBox">
+         <property name="styleSheet">
+          <string notr="true">background-color:#e6e4e3;color:black;</string>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -143,15 +193,44 @@
          <layout class="QVBoxLayout" name="verticalLayout_4">
           <item>
            <widget class="QLabel" name="label_3">
+            <property name="styleSheet">
+             <string notr="true">QLabel {
+                background-color: #e6e4e3; 
+                color: black; 
+                border: 2px solid #000;
+                border-radius: 10px; 
+                padding: 3px;  
+            }</string>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::Shape::StyledPanel</enum>
+            </property>
             <property name="text">
-             <string>Birim Seçiniz</string>
+             <string>Birim
+Seçiniz</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QLabel" name="label_4">
+            <property name="styleSheet">
+             <string notr="true">QLabel {
+                background-color: #e6e4e3; 
+                color: black; 
+                border: 2px solid #000;
+                border-radius: 10px; 
+                padding: 3px;  
+            }</string>
+            </property>
             <property name="text">
-             <string>Kalem Seçiniz</string>
+             <string>Kalem
+Seçiniz</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
             </property>
            </widget>
           </item>
@@ -168,10 +247,22 @@
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_3">
           <item>
-           <widget class="QComboBox" name="birimComboBox"/>
+           <widget class="QComboBox" name="birimComboBox">
+            <property name="styleSheet">
+             <string notr="true">QComboBox{
+background-color:#e6e4e3;
+color:black;
+
+}</string>
+            </property>
+           </widget>
           </item>
           <item>
-           <widget class="QComboBox" name="kalemComboBox"/>
+           <widget class="QComboBox" name="kalemComboBox">
+            <property name="styleSheet">
+             <string notr="true">background-color:#e6e4e3;color:black;</string>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -190,6 +281,9 @@
      <height>528</height>
     </rect>
    </property>
+   <property name="styleSheet">
+    <string notr="true">background-color:#f8f9fa;</string>
+   </property>
    <property name="frameShape">
     <enum>QFrame::Shape::StyledPanel</enum>
    </property>
@@ -197,6 +291,9 @@
     <enum>QFrame::Shadow::Raised</enum>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_5">
+    <property name="rightMargin">
+     <number>15</number>
+    </property>
     <item>
      <widget class="QFrame" name="topBarFrame">
       <property name="maximumSize">
@@ -214,6 +311,9 @@
       <layout class="QHBoxLayout" name="horizontalLayout_3">
        <item>
         <widget class="QFrame" name="homeFrame">
+         <property name="styleSheet">
+          <string notr="true">background-color:#e6e4e3;color:black;border-radius:10px;</string>
+         </property>
          <property name="frameShape">
           <enum>QFrame::Shape::StyledPanel</enum>
          </property>
@@ -224,13 +324,6 @@
           <item>
            <widget class="QPushButton" name="pushButton_4">
             <property name="text">
-             <string>PushButton</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_5">
-            <property name="text">
              <string>Ana Sayfa</string>
             </property>
            </widget>
@@ -240,6 +333,9 @@
        </item>
        <item>
         <widget class="QFrame" name="graphNameFrame">
+         <property name="styleSheet">
+          <string notr="true">background-color:#e6e4e3;color:black;border-radius:10px;</string>
+         </property>
          <property name="frameShape">
           <enum>QFrame::Shape::StyledPanel</enum>
          </property>
@@ -261,44 +357,14 @@
          </widget>
         </widget>
        </item>
-       <item>
-        <widget class="QFrame" name="btnFrame">
-         <property name="frameShape">
-          <enum>QFrame::Shape::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Shadow::Raised</enum>
-         </property>
-         <layout class="QHBoxLayout" name="horizontalLayout_4">
-          <item>
-           <widget class="QPushButton" name="pushButton_7">
-            <property name="text">
-             <string>PushButton</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pushButton_6">
-            <property name="text">
-             <string>PushButton</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pushButton_5">
-            <property name="text">
-             <string>PushButton</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
       </layout>
      </widget>
     </item>
     <item>
      <widget class="QFrame" name="graphFrame">
+      <property name="styleSheet">
+       <string notr="true">background-color:#e6e4e3; border-radius:10px;</string>
+      </property>
       <property name="frameShape">
        <enum>QFrame::Shape::StyledPanel</enum>
       </property>

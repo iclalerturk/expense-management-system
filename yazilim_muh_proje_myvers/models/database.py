@@ -12,44 +12,6 @@ class Database:
         self.conn.row_factory = sqlite3.Row
         self.cursor = self.conn.cursor()
 
-    def grafik_verisi_getir(self, kategori):
-        query_map = {
-            'birim': """
-                SELECT b.birimIsmi AS ad, strftime('%Y', h.tarih) AS yil, SUM(h.tutar) AS toplam
-                FROM harcama h
-                JOIN birim b ON h.birimId = b.birimId
-                GROUP BY b.birimIsmi, yil
-            """,
-            'kalem': """
-                SELECT k.kalemAd AS ad, strftime('%Y', h.tarih) AS yil, SUM(h.tutar) AS toplam
-                FROM harcama h
-                JOIN harcamakalemi k ON h.kalemId = k.kalemId
-                GROUP BY k.kalemAd, yil
-            """,
-            'kisi': """
-                SELECT c.isim AS ad, strftime('%Y', h.tarih) AS yil, SUM(h.tutar) AS toplam
-                FROM harcama h
-                JOIN calisan c ON h.calisanId = c.calisanId
-                GROUP BY c.isim, yil
-            """
-        }
-
-        if kategori not in query_map:
-            raise ValueError(f"Geçersiz kategori: {kategori}")
-
-        self.cursor.execute(query_map[kategori])
-        veri = self.cursor.fetchall()
-
-        data = defaultdict(lambda: defaultdict(float))
-        for row in veri:
-            ad = row["ad"]
-            yil = row["yil"]
-            toplam = row["toplam"]
-            data[ad][yil] += toplam
-        print("debug kontrol:\n")
-        print("Veri:", data)
-        return data
-
     def authUser(self, email, sifre):
         try:
             user_tables = [

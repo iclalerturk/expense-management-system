@@ -457,6 +457,8 @@ class DashboardUI(object):
         self.stacked_widget.addWidget(self.employees_page)
         # raporlama_page'i stacked_widget'e ekle
         self.stacked_widget.addWidget(self.raporlama_page)
+        # raporlama_page'i stacked_widget'e ekle
+        self.stacked_widget.addWidget(self.raporlama_page)
         # içerikleri ana içerik layouta ekle
         self.content_layout.addWidget(self.top_bar)
         self.content_layout.addWidget(self.stacked_widget)
