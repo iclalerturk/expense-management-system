@@ -1,6 +1,5 @@
 import sqlite3
 import os
-from datetime import datetime
 
 class Database:
     def __init__(self, db_path=None):
@@ -10,7 +9,7 @@ class Database:
         self.conn = sqlite3.connect(self.db_path)
         self.conn.row_factory = sqlite3.Row
         self.cursor = self.conn.cursor()
-    
+
     def authUser(self, email, sifre):
         try:
             user_tables = [
@@ -61,9 +60,6 @@ class Database:
         connection.close()
         return total_butce
     
-    #def set_total_butce:
-        
-
     def get_used_butce(self): #totalde -> birim başına değil -> birim başına da hesaplanacak
         connection = sqlite3.connect(self.db_path)
         cursor = connection.cursor()
@@ -78,7 +74,49 @@ class Database:
         cursor.execute("SELECT birimIsmi FROM birim")
         birimler = cursor.fetchone()[0]
         connection.close()
-        return birimler
+        return [birim[0] for birim in birimler]
+    
+    def get_kalemler(self):
+        connection = sqlite3.connect(self.db_path)
+        cursor = connection.cursor()
+        cursor.execute("SELECT kalemId, kalemAd FROM harcamakalemi")
+        kalemler = cursor.fetchone()[0]
+        connection.close()
+        return [kalem[0] for kalem in kalemler]
+    
+    def get_unit_expenses_by_category(self, unit_id):
+        connection = sqlite3.connect(self.db_path)
+        cursor = connection.cursor()
+        try:
+            query = """
+            SELECT hk.kalemAd, SUM(h.tutar) as total_amount
+            FROM harcama h
+            JOIN harcamakalemi hk ON h.kalemId = hk.kalemId
+            WHERE h.birimId = ? AND h.onayDurumu = 'Onaylandi'
+            GROUP BY h.kalemId
+            """
+            cursor.execute(query, (unit_id,))
+            return cursor.fetchall()
+        except sqlite3.Error as e:
+            print(f"Error fetching unit expenses: {e}")
+            return []
+    
+    def get_category_expenses_by_unit(self, category_id):
+        connection = sqlite3.connect(self.db_path)
+        cursor = connection.cursor()
+        try:
+            query = """
+            SELECT b.birimIsmi, SUM(h.tutar) as total_amount
+            FROM harcama h
+            JOIN birim b ON h.birimId = b.birimId
+            WHERE h.kalemId = ? AND h.onayDurumu = 'Onaylandi'
+            GROUP BY h.birimId
+            """
+            cursor.execute(query, (category_id,))
+            return cursor.fetchall()
+        except sqlite3.Error as e:
+            print(f"Error fetching category expenses: {e}")
+            return []
     
     def get_unit_and_kalem_budget(self):
         connection = sqlite3.connect(self.db_path)
