@@ -2,6 +2,8 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QTableWidgetItem
 from models.database import Database
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 
 class DashboardUI(object):
     def setupUi(self, Form):
@@ -417,6 +419,13 @@ class DashboardUI(object):
         # Ana layout'a ekle
         self.raporlama_layout.addLayout(self.button_layout)
         self.raporlama_layout.addWidget(self.graphic_area)
+
+        self.graphic_layout = QtWidgets.QVBoxLayout(self.graphic_area)
+        self.canvas = FigureCanvas(Figure(figsize=(6, 4)))
+        self.ax = self.canvas.figure.add_subplot(111)
+        self.graphic_layout.addWidget(self.canvas)
+
+
         # Örnek çalışanlar tablosu
         self.employees_table = QtWidgets.QTableWidget()
         self.employees_table.setColumnCount(5)
@@ -458,10 +467,32 @@ class DashboardUI(object):
         self.btn_home.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.content_page))
         self.btn_employees.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.employees_page))
         self.btn_reports.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.raporlama_page))
+        self.button1.clicked.connect(lambda: self.grafik_ciz('birim'))
+        self.button2.clicked.connect(lambda: self.grafik_ciz('kalem'))
+        self.button3.clicked.connect(lambda: self.grafik_ciz('kisi'))
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
     
     #arayüzde kullanılan metodlar:
+    def grafik_ciz(self,kategori):
+        self.ax.clear()
+        db = Database()
+        veri = db.grafik_verisi_getir(kategori)  # dış fonksiyondan veriyi al
+
+        for ad, yillar in veri.items():
+            yillar_sirali = sorted(yillar.items())
+            yillar, tutarlar = zip(*yillar_sirali)
+            self.ax.plot(yillar, tutarlar, label=ad)
+
+        self.ax.set_title(f"{kategori.capitalize()} Bazlı Yıllık Harcama")
+        self.ax.set_xlabel("Yıl")
+        self.ax.set_ylabel("Tutar (₺)")
+        self.ax.legend()
+        self.canvas.draw()
+    
+
+
+
     def create_menu_button(self, text, icon_path):
         button = QtWidgets.QPushButton(text)
         button.setIcon(QtGui.QIcon(icon_path))
