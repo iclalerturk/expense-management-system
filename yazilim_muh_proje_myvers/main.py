@@ -38,7 +38,7 @@ class giderApp(QtWidgets.QWidget, LoginUi):
         self.dashboard_ui.setupUi(self.dashboard_window)
         # Dashboard içindeki butonu yeniden aynı dashboard'u açmak için bağla
         self.dashboard_ui.btn_home.clicked.connect(self.reopen_dashboard)
-        self.dashboard_ui.btn_reports.clicked.connect(self.open_raporlama)
+        # self.dashboard_ui.btn_reports.clicked.connect(self.open_raporlama)
         self.dashboard_window.show()
         self.hide()
 

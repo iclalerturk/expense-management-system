@@ -148,6 +148,16 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
+        <widget class="QLabel" name="label_5">
+         <property name="text">
+          <string>Grafik Türü</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignBottom|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft</set>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QComboBox" name="graphTypeComboBox">
          <property name="styleSheet">
           <string notr="true">background-color:#e6e4e3;color:black;</string>
@@ -282,7 +292,7 @@ color:black;
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_5">
     <property name="rightMargin">
-     <number>9</number>
+     <number>15</number>
     </property>
     <item>
      <widget class="QFrame" name="topBarFrame">
@@ -313,13 +323,6 @@ color:black;
          <layout class="QHBoxLayout" name="horizontalLayout_5">
           <item>
            <widget class="QPushButton" name="pushButton_4">
-            <property name="text">
-             <string>PushButton</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_5">
             <property name="text">
              <string>Ana Sayfa</string>
             </property>
@@ -352,42 +355,6 @@ color:black;
            <string>graph name</string>
           </property>
          </widget>
-        </widget>
-       </item>
-       <item>
-        <widget class="QFrame" name="btnFrame">
-         <property name="styleSheet">
-          <string notr="true">background-color:#e6e4e3;color:black;border-radius:10px;</string>
-         </property>
-         <property name="frameShape">
-          <enum>QFrame::Shape::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Shadow::Raised</enum>
-         </property>
-         <layout class="QHBoxLayout" name="horizontalLayout_4">
-          <item>
-           <widget class="QPushButton" name="pushButton_7">
-            <property name="text">
-             <string>PushButton</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pushButton_6">
-            <property name="text">
-             <string>PushButton</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pushButton_5">
-            <property name="text">
-             <string>PushButton</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
         </widget>
        </item>
       </layout>

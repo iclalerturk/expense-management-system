@@ -356,6 +356,67 @@ class DashboardUI(object):
         self.employees_layout = QtWidgets.QVBoxLayout(self.employees_page)
         self.employees_layout.setContentsMargins(30, 30, 30, 30)
 
+
+        self.raporlama_page = QtWidgets.QWidget()
+        self.raporlama_page.setObjectName("employees_page")
+        self.raporlama_layout = QtWidgets.QVBoxLayout(self.raporlama_page)
+        self.raporlama_layout.setContentsMargins(30, 30, 30, 30)
+        self.button_layout = QtWidgets.QHBoxLayout()
+
+        self.button1 = QtWidgets.QPushButton("Birim Bazında Grafikler")
+        self.button1.setStyleSheet('''
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                padding: 10px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+        ''')
+        self.button2 = QtWidgets.QPushButton("Kalem Bazında Grafikler")
+        self.button2.setStyleSheet('''
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                padding: 10px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+        ''')
+        self.button3 = QtWidgets.QPushButton("Kişi Bazlında Grafiikler")
+        self.button3.setStyleSheet('''
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                padding: 10px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+        ''')
+        self.button_layout.addWidget(self.button1)
+        self.button_layout.addWidget(self.button2)
+        self.button_layout.addWidget(self.button3)
+
+        # Grafik alanı için boş bir widget (şimdilik)
+        self.graphic_area = QtWidgets.QFrame()
+        self.graphic_area.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.graphic_area.setMinimumHeight(300)  # İstersen yüksekliği sabitleyebilirsin
+
+        # Ana layout'a ekle
+        self.raporlama_layout.addLayout(self.button_layout)
+        self.raporlama_layout.addWidget(self.graphic_area)
         # Örnek çalışanlar tablosu
         self.employees_table = QtWidgets.QTableWidget()
         self.employees_table.setColumnCount(5)
@@ -383,6 +444,8 @@ class DashboardUI(object):
 
         # employees_page'i stacked_widget'e ekle
         self.stacked_widget.addWidget(self.employees_page)
+        # raporlama_page'i stacked_widget'e ekle
+        self.stacked_widget.addWidget(self.raporlama_page)
         # içerikleri ana içerik layouta ekle
         self.content_layout.addWidget(self.top_bar)
         self.content_layout.addWidget(self.stacked_widget)
@@ -394,7 +457,7 @@ class DashboardUI(object):
         self.btn_home.setChecked(True)
         self.btn_home.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.content_page))
         self.btn_employees.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.employees_page))
-
+        self.btn_reports.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.raporlama_page))
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
     
