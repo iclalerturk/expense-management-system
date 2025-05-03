@@ -427,21 +427,17 @@ class DashboardUI(object):
         self.canvas = FigureCanvas(Figure(figsize=(6, 4)))
         self.ax = self.canvas.figure.add_subplot(111)
         
-        # Yeni alt layout
-        self.kisi_secim_layout = QtWidgets.QVBoxLayout()
 
         # Label
         self.kisi_label = QtWidgets.QLabel("Kişi Seçiniz:")
         self.kisi_label.setVisible(False)
-        self.kisi_secim_layout.addWidget(self.kisi_label)
+        self.graphic_layout.addWidget(self.kisi_label)
 
         # ComboBox
         self.kisi_combo = QtWidgets.QComboBox()
         self.kisi_combo.setVisible(False)
-        self.kisi_secim_layout.addWidget(self.kisi_combo)
+        self.graphic_layout.addWidget(self.kisi_combo)
 
-        # Ana layouta alt layout'u ekle
-        self.graphic_layout.addLayout(self.kisi_secim_layout)
 
         self.birim_label = QtWidgets.QLabel("Birim Seçiniz:")
         self.birim_label.setVisible(False)
@@ -453,7 +449,7 @@ class DashboardUI(object):
 
         self.kalem_label = QtWidgets.QLabel("Kalem Seçiniz:")
         self.kalem_label.setVisible(False)
-        self.graphic_layout.addWidget(self.kisi_label)
+        self.graphic_layout.addWidget(self.kalem_label)
         # Kişi seçim kutusu
         self.kalem_combo = QtWidgets.QComboBox()
         self.kalem_combo.setVisible(False)  # Başlangıçta görünmesin
