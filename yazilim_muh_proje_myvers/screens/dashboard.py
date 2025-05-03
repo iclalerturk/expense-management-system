@@ -367,6 +367,7 @@ class DashboardUI(object):
         self.raporlama_layout.setContentsMargins(30, 30, 30, 30)
         self.button_layout = QtWidgets.QHBoxLayout()
 
+
         self.button1 = QtWidgets.QPushButton("Birim Bazında Grafikler")
         self.button1.setStyleSheet('''
             QPushButton {
@@ -425,9 +426,95 @@ class DashboardUI(object):
         self.graphic_layout = QtWidgets.QVBoxLayout(self.graphic_area)
         self.canvas = FigureCanvas(Figure(figsize=(6, 4)))
         self.ax = self.canvas.figure.add_subplot(111)
+        
+        # Yeni alt layout
+        self.kisi_secim_layout = QtWidgets.QVBoxLayout()
+
+        # Label
+        self.kisi_label = QtWidgets.QLabel("Kişi Seçiniz:")
+        self.kisi_label.setVisible(False)
+        self.kisi_secim_layout.addWidget(self.kisi_label)
+
+        # ComboBox
+        self.kisi_combo = QtWidgets.QComboBox()
+        self.kisi_combo.setVisible(False)
+        self.kisi_secim_layout.addWidget(self.kisi_combo)
+
+        # Ana layouta alt layout'u ekle
+        self.graphic_layout.addLayout(self.kisi_secim_layout)
+
+        self.birim_label = QtWidgets.QLabel("Birim Seçiniz:")
+        self.birim_label.setVisible(False)
+        self.graphic_layout.addWidget(self.birim_label)
+        # birim seçim kutusu
+        self.birim_combo = QtWidgets.QComboBox()
+        self.birim_combo.setVisible(False)  # Başlangıçta görünmesin
+        self.graphic_layout.addWidget(self.birim_combo)
+
+        self.kalem_label = QtWidgets.QLabel("Kalem Seçiniz:")
+        self.kalem_label.setVisible(False)
+        self.graphic_layout.addWidget(self.kisi_label)
+        # Kişi seçim kutusu
+        self.kalem_combo = QtWidgets.QComboBox()
+        self.kalem_combo.setVisible(False)  # Başlangıçta görünmesin
+        self.graphic_layout.addWidget(self.kalem_combo)
+
+        
+        # Seç butonu
+        self.sec_buttonKisi = QtWidgets.QPushButton("Grafiği Göster")
+        self.sec_buttonKisi.setVisible(False)
+        self.sec_buttonKisi.setStyleSheet('''
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                padding: 10px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+        ''')
+        self.graphic_layout.addWidget(self.sec_buttonKisi)
+
+        self.sec_buttonKalem = QtWidgets.QPushButton("Grafiği Göster")
+        self.sec_buttonKalem.setVisible(False)
+        self.sec_buttonKalem.setStyleSheet('''
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                padding: 10px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+        ''')
+        self.graphic_layout.addWidget(self.sec_buttonKalem)
+
+
+        self.sec_buttonBirim = QtWidgets.QPushButton("Grafiği Göster")
+        self.sec_buttonBirim.setVisible(False)
+        self.sec_buttonBirim.setStyleSheet('''
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                padding: 10px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+        ''')
+        self.graphic_layout.addWidget(self.sec_buttonBirim)
+
+
         self.graphic_layout.addWidget(self.canvas)
-
-
         # Örnek çalışanlar tablosu
         self.employees_table = QtWidgets.QTableWidget()
         self.employees_table.setColumnCount(5)
@@ -474,8 +561,53 @@ class DashboardUI(object):
         self.button1.clicked.connect(lambda: self.update_graph('birim'))
         self.button2.clicked.connect(lambda: self.update_graph('kalem'))
         self.button3.clicked.connect(lambda: self.update_graph('kisi'))
+        self.button3.clicked.connect(self.kisi_grafik_baslat)
+        self.button1.clicked.connect(self.birim_grafik_baslat)
+        self.button2.clicked.connect(self.kalem_grafik_baslat)
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
+
+    def kisi_grafik_baslat(self):
+        self.kalem_label.setVisible(False)
+        self.kalem_combo.setVisible(False)
+        self.sec_buttonKalem.setVisible(False)
+        self.birim_label.setVisible(False)
+        self.birim_combo.setVisible(False)
+        self.sec_buttonBirim.setVisible(False)
+        self.kisi_label.setVisible(True)
+        self.kisi_combo.clear()
+            # self.kisi_combo.addItems(veriler.keys())  # Kişi adları
+        self.kisi_combo.setVisible(True)
+        self.sec_buttonKisi.setVisible(True)
+    
+    def birim_grafik_baslat(self):
+        self.kisi_label.setVisible(False)
+        self.kisi_combo.setVisible(False)
+        self.sec_buttonKisi.setVisible(False)
+        self.kalem_label.setVisible(False)
+        self.kalem_combo.setVisible(False)
+        self.sec_buttonKalem.setVisible(False)
+        self.birim_label.setVisible(True)
+        self.birim_combo.clear()
+        # self.birim_combo.addItems(veriler.keys())  # Birim adları
+        self.birim_combo.setVisible(True)
+        self.sec_buttonKalem.setVisible(True)
+
+    def kalem_grafik_baslat(self):
+        self.kisi_label.setVisible(False)
+        self.kisi_combo.setVisible(False)
+        self.sec_buttonKisi.setVisible(False)
+        self.birim_label.setVisible(False)
+        self.birim_combo.setVisible(False)
+        self.sec_buttonBirim.setVisible(False)
+        self.kalem_label.setVisible(True)
+        self.kalem_combo.clear()
+        # self.kalem_combo.addItems(veriler.keys())  # Kalem adları
+        self.kalem_combo.setVisible(True)
+        self.sec_buttonKalem.setVisible(True)
+
+
+
 
     def update_graph(self, kategori):
         try:
