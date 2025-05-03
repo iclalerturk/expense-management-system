@@ -12,32 +12,53 @@ class Database:
         self.conn.row_factory = sqlite3.Row
         self.cursor = self.conn.cursor()
 
-    def grafik_verisi_getir(self, kategori):
+
+    def grafik_verisi_getir(self, kategori, secilen_id=None):
         query_map = {
             'birim': """
                 SELECT b.birimIsmi AS ad, strftime('%Y', h.tarih) AS yil, SUM(h.tutar) AS toplam
                 FROM harcama h
                 JOIN birim b ON h.birimId = b.birimId
+                {where}
                 GROUP BY b.birimIsmi, yil
             """,
             'kalem': """
                 SELECT k.kalemAd AS ad, strftime('%Y', h.tarih) AS yil, SUM(h.tutar) AS toplam
                 FROM harcama h
                 JOIN harcamakalemi k ON h.kalemId = k.kalemId
+                {where}
                 GROUP BY k.kalemAd, yil
             """,
             'kisi': """
-                SELECT c.isim AS ad, strftime('%Y', h.tarih) AS yil, SUM(h.tutar) AS toplam
+                SELECT c.isim || ' ' || c.soyisim AS ad, strftime('%Y', h.tarih) AS yil, SUM(h.tutar) AS toplam
                 FROM harcama h
                 JOIN calisan c ON h.calisanId = c.calisanId
-                GROUP BY c.isim, yil
+                {where}
+                GROUP BY c.isim || ' ' || c.soyisim, yil
             """
         }
 
         if kategori not in query_map:
             raise ValueError(f"Geçersiz kategori: {kategori}")
 
-        self.cursor.execute(query_map[kategori])
+        # ID'ye göre WHERE filtreleme ekle
+        if secilen_id:
+            if kategori == 'birim':
+                where_clause = f"WHERE h.birimId = ?"
+            elif kategori == 'kalem':
+                where_clause = f"WHERE h.kalemId = ?"
+            elif kategori == 'kisi':
+                where_clause = f"WHERE h.calisanId = ?"
+        else:
+            where_clause = ""
+
+        query = query_map[kategori].format(where=where_clause)
+
+        if secilen_id:
+            self.cursor.execute(query, (secilen_id,))
+        else:
+            self.cursor.execute(query)
+
         veri = self.cursor.fetchall()
 
         data = defaultdict(lambda: defaultdict(float))
@@ -46,9 +67,11 @@ class Database:
             yil = row["yil"]
             toplam = row["toplam"]
             data[ad][yil] += toplam
+
         print("debug kontrol:\n")
         print("Veri:", data)
         return data
+
 
     def authUser(self, email, sifre):
         try:
@@ -111,10 +134,10 @@ class Database:
     def get_birimler(self):
         connection = sqlite3.connect(self.db_path)
         cursor = connection.cursor()
-        cursor.execute("SELECT birimIsmi FROM birim")
+        cursor.execute("SELECT birimId, birimIsmi FROM birim")
         birimler = cursor.fetchall()
         connection.close()
-        return [birim[0] for birim in birimler]
+        return birimler
     
     def get_kalemler(self):
         connection = sqlite3.connect(self.db_path)
@@ -122,7 +145,7 @@ class Database:
         cursor.execute("SELECT kalemId, kalemAd FROM harcamakalemi")
         kalemler = cursor.fetchall()
         connection.close()
-        return [kalem[0] for kalem in kalemler]
+        return kalemler
     
     def get_unit_expenses_by_category(self, unit_id):
         connection = sqlite3.connect(self.db_path)

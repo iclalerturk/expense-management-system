@@ -554,14 +554,39 @@ class DashboardUI(object):
         self.btn_home.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.content_page))
         self.btn_employees.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.employees_page))
         self.btn_reports.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.raporlama_page))
-        self.button1.clicked.connect(lambda: self.update_graph('birim'))
-        self.button2.clicked.connect(lambda: self.update_graph('kalem'))
-        self.button3.clicked.connect(lambda: self.update_graph('kisi'))
+        # self.button1.clicked.connect(lambda: self.update_graph('birim'))
+        # self.button2.clicked.connect(lambda: self.update_graph('kalem'))
+        # self.button3.clicked.connect(lambda: self.update_graph('kisi'))
         self.button3.clicked.connect(self.kisi_grafik_baslat)
         self.button1.clicked.connect(self.birim_grafik_baslat)
         self.button2.clicked.connect(self.kalem_grafik_baslat)
+        self.sec_buttonKisi.clicked.connect(self.grafik_kisi_sec)
+        self.sec_buttonKalem.clicked.connect(self.grafik_kalem_sec)
+        self.sec_buttonBirim.clicked.connect(self.grafik_birim_sec)
+
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
+
+    def grafik_kisi_sec(self):
+        secim = self.kisi_combo.currentText()
+        if not secim:
+            return
+        calisan_id = secim.split(" - ")[0]
+        self.grafik_guncelle_filtreli("kisi", calisan_id)
+
+    def grafik_kalem_sec(self):
+        secim = self.kalem_combo.currentText()
+        if not secim:
+            return
+        kalem_id = secim.split(" - ")[0]
+        self.grafik_guncelle_filtreli("kalem", kalem_id)
+    
+    def grafik_birim_sec(self):
+        secim = self.birim_combo.currentText()
+        if not secim:
+            return
+        birim_id = secim.split(" - ")[0]
+        self.grafik_guncelle_filtreli("birim", birim_id)
 
     def kisi_grafik_baslat(self):
         self.kalem_label.setVisible(False)
@@ -575,6 +600,17 @@ class DashboardUI(object):
             # self.kisi_combo.addItems(veriler.keys())  # Kişi adları
         self.kisi_combo.setVisible(True)
         self.sec_buttonKisi.setVisible(True)
+        db=Database()
+        data = db.get_all_calisanlar()
+        self.kisi_combo.clear()
+        for row in data:
+            calisan_id = row[0]
+            isim = row[1]
+            soyisim = row[2]
+            birim = row[3]
+            email = row[4]
+            self.kisi_combo.addItem(f"{calisan_id} - {isim} {soyisim} - {birim} - {email}")  # Kişi adları ve ID'leri
+
     
     def birim_grafik_baslat(self):
         self.kisi_label.setVisible(False)
@@ -588,6 +624,13 @@ class DashboardUI(object):
         # self.birim_combo.addItems(veriler.keys())  # Birim adları
         self.birim_combo.setVisible(True)
         self.sec_buttonKalem.setVisible(True)
+        db=Database()
+        data = db.get_birimler()
+        self.birim_combo.clear()
+        for row in data:
+            birim_id = row[0]
+            birim_adi = row[1]
+            self.birim_combo.addItem(f"{birim_id} - {birim_adi}")  # Birim adları ve ID'leri
 
     def kalem_grafik_baslat(self):
         self.kisi_label.setVisible(False)
@@ -601,60 +644,57 @@ class DashboardUI(object):
         # self.kalem_combo.addItems(veriler.keys())  # Kalem adları
         self.kalem_combo.setVisible(True)
         self.sec_buttonKalem.setVisible(True)
+        db=Database()
+        data = db.get_kalemler()
+        self.kalem_combo.clear()
+        for row in data:
+            kalem_id = row[0]
+            kalem_adi = row[1]
+            self.kalem_combo.addItem(f"{kalem_id} - {kalem_adi}")  # Kalem adları ve ID'leri
 
 
 
-
-    def update_graph(self, kategori):
+    def grafik_guncelle_filtreli(self, kategori, secilen_id):
         try:
             db = Database()
-            data = db.grafik_verisi_getir(kategori)
+            data = db.grafik_verisi_getir(kategori, secilen_id)  # Parametreli veri çekimi
             
             if not data:
                 QtWidgets.QMessageBox.warning(self.raporlama_page, "Uyarı", f"{kategori.capitalize()} için veri bulunamadı.")
                 return
-                
-            # Mevcut grafiği temizle
+
             self.ax.clear()
-            
-            # Tüm yılları topla ve sırala
             all_years = set()
             for entity_data in data.values():
                 all_years.update(entity_data.keys())
             all_years = sorted(all_years)
-            
-            # Her bir varlık için yıllara göre verileri düzenle
             bars = []
-            bar_width = 0.8 / len(data)  # Çubukların genişliği
+            bar_width = 0.8 / len(data)
             index = np.arange(len(all_years))
-            
-            # Her bir varlık için çubuk ekle
+
             for i, (entity_name, yearly_data) in enumerate(data.items()):
                 values = [yearly_data.get(year, 0) for year in all_years]
                 position = index + i * bar_width
                 bar = self.ax.bar(position, values, bar_width, label=entity_name)
                 bars.append(bar)
-            
-            # Eksen etiketleri ve başlık
+
             kategori_basliklari = {
                 'birim': 'Birim Bazında Yıllık Harcamalar',
                 'kalem': 'Harcama Kalemi Bazında Yıllık Harcamalar',
                 'kisi': 'Kişi Bazında Yıllık Harcamalar'
             }
-            
+
             self.ax.set_xlabel('Yıl')
             self.ax.set_ylabel('Toplam Harcama (TL)')
             self.ax.set_title(kategori_basliklari.get(kategori, 'Yıllık Harcamalar'))
             self.ax.set_xticks(index + bar_width * (len(data) - 1) / 2)
             self.ax.set_xticklabels(all_years)
             self.ax.legend()
-            
-            # Grafiği güncelle
             self.canvas.draw()
-            
+
         except Exception as e:
-            # Use a valid parent widget (self.raporlama_page is a QWidget)
             QtWidgets.QMessageBox.critical(self.raporlama_page, "Hata", f"Grafik güncellenirken bir hata oluştu: {str(e)}")
+
 
     def create_menu_button(self, text, icon_path):
         button = QtWidgets.QPushButton(text)
