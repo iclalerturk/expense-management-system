@@ -585,8 +585,9 @@ class DashboardUI(object):
         secim = self.birim_combo.currentText()
         if not secim:
             return
-        birim_id = secim.split(" - ")[0]
+        birim_id = int(secim.split(" - ")[0])
         self.grafik_guncelle_filtreli("birim", birim_id)
+
 
     def kisi_grafik_baslat(self):
         self.kalem_label.setVisible(False)
@@ -623,7 +624,7 @@ class DashboardUI(object):
         self.birim_combo.clear()
         # self.birim_combo.addItems(veriler.keys())  # Birim adları
         self.birim_combo.setVisible(True)
-        self.sec_buttonKalem.setVisible(True)
+        self.sec_buttonBirim.setVisible(True)
         db=Database()
         data = db.get_birimler()
         self.birim_combo.clear()
