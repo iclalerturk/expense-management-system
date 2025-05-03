@@ -1,15 +1,14 @@
 import PyQt5.QtWidgets as QtWidgets
 import sys
 from screens.loginUi import LoginUi
+from screens.dashboard import DashboardUI
 from models.database import Database
 
 class giderApp(QtWidgets.QWidget, LoginUi):
     def __init__(self):
         super(giderApp, self).__init__()
         self.setupUi(self)
-
         self.db = Database()  # veritabanı nesnesi
-
         self.userMailText.returnPressed.connect(self.on_login_click)
         self.passwordText.returnPressed.connect(self.on_login_click)
         self.loginButton.clicked.connect(self.on_login_click)
@@ -32,12 +31,30 @@ class giderApp(QtWidgets.QWidget, LoginUi):
         else:
             QtWidgets.QMessageBox.warning(self, "Hatalı Giriş", "E-posta veya şifre hatalı!")
 
-    def open_dashboard(self, user):
+    def open_dashboard(self, user=None):
         from screens.dashboard import DashboardUI
         self.dashboard_window = QtWidgets.QWidget()
         self.dashboard_ui = DashboardUI()
         self.dashboard_ui.setupUi(self.dashboard_window)
+        # Dashboard içindeki butonu yeniden aynı dashboard'u açmak için bağla
+        self.dashboard_ui.btn_home.clicked.connect(self.reopen_dashboard)
+        self.dashboard_ui.btn_reports.clicked.connect(self.open_raporlama)
         self.dashboard_window.show()
+        self.hide()
+
+    def reopen_dashboard(self):
+        #self.dashboard_window.close()
+        self.dashboard_window.show()
+        self.hide()
+        #self.open_dashboard()
+    
+    def open_raporlama(self):
+        from screens.raporYeni import Ui_Form
+        self.rapor_window = QtWidgets.QWidget()
+        self.rapor_ui = Ui_Form()
+        self.rapor_ui.setupUi(self.rapor_window)
+        self.rapor_ui.pushButton_4.clicked.connect(self.reopen_dashboard)
+        self.rapor_window.show()
         self.hide()
 
 if __name__ == "__main__":
