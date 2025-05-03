@@ -72,7 +72,7 @@ class Database:
         connection = sqlite3.connect(self.db_path)
         cursor = connection.cursor()
         cursor.execute("SELECT birimIsmi FROM birim")
-        birimler = cursor.fetchone()[0]
+        birimler = cursor.fetchall()
         connection.close()
         return [birim[0] for birim in birimler]
     
@@ -80,7 +80,7 @@ class Database:
         connection = sqlite3.connect(self.db_path)
         cursor = connection.cursor()
         cursor.execute("SELECT kalemId, kalemAd FROM harcamakalemi")
-        kalemler = cursor.fetchone()[0]
+        kalemler = cursor.fetchall()
         connection.close()
         return [kalem[0] for kalem in kalemler]
     
