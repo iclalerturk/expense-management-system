@@ -12,32 +12,52 @@ class Database:
         self.conn.row_factory = sqlite3.Row
         self.cursor = self.conn.cursor()
 
-    def grafik_verisi_getir(self, kategori):
+    def grafik_verisi_getir(self, kategori, secilen_id=None):
         query_map = {
             'birim': """
                 SELECT b.birimIsmi AS ad, strftime('%Y', h.tarih) AS yil, SUM(h.tutar) AS toplam
                 FROM harcama h
                 JOIN birim b ON h.birimId = b.birimId
+                {where}
                 GROUP BY b.birimIsmi, yil
             """,
             'kalem': """
                 SELECT k.kalemAd AS ad, strftime('%Y', h.tarih) AS yil, SUM(h.tutar) AS toplam
                 FROM harcama h
                 JOIN harcamakalemi k ON h.kalemId = k.kalemId
+                {where}
                 GROUP BY k.kalemAd, yil
             """,
             'kisi': """
-                SELECT c.isim AS ad, strftime('%Y', h.tarih) AS yil, SUM(h.tutar) AS toplam
+                SELECT c.isim || ' ' || c.soyisim AS ad, strftime('%Y', h.tarih) AS yil, SUM(h.tutar) AS toplam
                 FROM harcama h
                 JOIN calisan c ON h.calisanId = c.calisanId
-                GROUP BY c.isim, yil
+                {where}
+                GROUP BY c.isim || ' ' || c.soyisim, yil
             """
         }
 
         if kategori not in query_map:
             raise ValueError(f"Geçersiz kategori: {kategori}")
 
-        self.cursor.execute(query_map[kategori])
+        # ID'ye göre WHERE filtreleme ekle
+        if secilen_id:
+            if kategori == 'birim':
+                where_clause = f"WHERE h.birimId = ?"
+            elif kategori == 'kalem':
+                where_clause = f"WHERE h.kalemId = ?"
+            elif kategori == 'kisi':
+                where_clause = f"WHERE h.calisanId = ?"
+        else:
+            where_clause = ""
+
+        query = query_map[kategori].format(where=where_clause)
+
+        if secilen_id:
+            self.cursor.execute(query, (secilen_id,))
+        else:
+            self.cursor.execute(query)
+
         veri = self.cursor.fetchall()
 
         data = defaultdict(lambda: defaultdict(float))
@@ -46,9 +66,113 @@ class Database:
             yil = row["yil"]
             toplam = row["toplam"]
             data[ad][yil] += toplam
+
         print("debug kontrol:\n")
         print("Veri:", data)
         return data
+
+    def get_birim_harcamalari(self):
+        try:
+            self.cursor.execute('''
+                SELECT birimId, SUM(tutar) 
+                FROM harcama 
+                GROUP BY birimId
+            ''')
+            return self.cursor.fetchall()
+        except Exception as e:
+            print(f"Hata: {str(e)}")
+            return []
+    
+    def get_kalem_comparison_by_birim(self, birim_id):
+        try:
+            with sqlite3.connect(self.db_path) as connection:
+                cursor = connection.cursor()
+                
+                query = """
+                SELECT 
+                    hk.kalemAd,
+                    SUM(h.tutar) as total_amount
+                FROM 
+                    harcama h
+                JOIN 
+                    harcamakalemi hk ON h.kalemId = hk.kalemId
+                WHERE 
+                    h.birimId = ? AND h.onayDurumu = 'Onaylandi'
+                GROUP BY 
+                    h.kalemId
+                ORDER BY 
+                    total_amount DESC
+                """
+                cursor.execute(query, (birim_id,))
+                results = cursor.fetchall()
+                return results
+        except sqlite3.Error as e:
+            print(f"Error fetching kalem comparison: {e}")
+            return []
+    
+    # Database sınıfına eklenecek fonksiyonlar
+
+    def get_birim_comparison_by_kalem(self, kalem_id): #belirli bir kalem için tüm birimlerin hacama bilgisi
+        try:
+            query = """
+            SELECT b.birimIsmi, COALESCE(SUM(h.tutar), 0) as toplam_tutar
+            FROM birim b
+            LEFT JOIN harcama h ON b.birimId = h.birimId AND h.kalemId = ?
+            GROUP BY b.birimId, b.birimIsmi
+            ORDER BY toplam_tutar DESC
+            """
+            self.cursor.execute(query, (kalem_id,))
+            return self.cursor.fetchall()
+        except Exception as e:
+            print(f"Veri çekme hatası: {str(e)}")
+            return []
+
+    def get_kalem_harcamalari(self):
+        try:
+            query = """
+            SELECT kalemId, SUM(tutar) 
+            FROM harcama
+            GROUP BY kalemId
+            """
+            self.cursor.execute(query)
+            return self.cursor.fetchall()
+        except Exception as e:
+            print(f"Veri çekme hatası: {str(e)}")
+            return []
+
+    def calisan_digerleri_by_birim(self, calisan_id):
+        connection = sqlite3.connect(self.db_path)
+        cursor = connection.cursor()
+        try:
+            query = """
+            SELECT
+                SUM(CASE WHEN c.calisanId = ? THEN h.tutar ELSE 0 END) AS secilen_calisan_tutar,
+                SUM(CASE WHEN c.calisanId != ? THEN h.tutar ELSE 0 END) AS diger_calisanlar_tutar
+            FROM
+                harcama h
+            JOIN
+                calisan c ON h.calisanId = c.calisanId
+            WHERE
+                c.birimId = (SELECT birimId FROM calisan WHERE calisanId = ?) AND h.onayDurumu = 'Onaylandi'
+            """
+            cursor.execute(query, (calisan_id, calisan_id, calisan_id,))
+            results = cursor.fetchone()
+            connection.close()
+            return results
+        except sqlite3.Error as e:
+            print(f"Error fetching employee vs others: {e}")
+            connection.close()
+            return None
+    
+    def get_calisan_by_id(self, calisan_id):
+        connection = sqlite3.connect(self.db_path)
+        cursor = connection.cursor()
+        cursor.execute("SELECT isim, soyisim FROM calisan WHERE calisanId = ?", (calisan_id,))
+        result = cursor.fetchone()
+        connection.close()
+        if result:
+            secilen_kisi_adi = f"{result[0]} {result[1]}"
+        return secilen_kisi_adi
 
     def authUser(self, email, sifre):
         try:
@@ -111,10 +235,10 @@ class Database:
     def get_birimler(self):
         connection = sqlite3.connect(self.db_path)
         cursor = connection.cursor()
-        cursor.execute("SELECT birimIsmi FROM birim")
+        cursor.execute("SELECT birimId, birimIsmi FROM birim")
         birimler = cursor.fetchall()
         connection.close()
-        return [birim[0] for birim in birimler]
+        return birimler
     
     def get_kalemler(self):
         connection = sqlite3.connect(self.db_path)
@@ -122,7 +246,7 @@ class Database:
         cursor.execute("SELECT kalemId, kalemAd FROM harcamakalemi")
         kalemler = cursor.fetchall()
         connection.close()
-        return [kalem[0] for kalem in kalemler]
+        return kalemler
     
     def get_unit_expenses_by_category(self, unit_id):
         connection = sqlite3.connect(self.db_path)
@@ -293,7 +417,7 @@ class Database:
             
             if not kalem_result:
                 return "basarisiz"  # kalem bulunamadı
-                
+
             kalem_id = kalem_result[0]
             
             cursor.execute("SELECT birimId FROM birim WHERE birimIsmi = ?", (birim_adi,))

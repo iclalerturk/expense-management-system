@@ -36,25 +36,12 @@ class giderApp(QtWidgets.QWidget, LoginUi):
         self.dashboard_window = QtWidgets.QWidget()
         self.dashboard_ui = DashboardUI()
         self.dashboard_ui.setupUi(self.dashboard_window)
-        # Dashboard içindeki butonu yeniden aynı dashboard'u açmak için bağla
         self.dashboard_ui.btn_home.clicked.connect(self.reopen_dashboard)
-        # self.dashboard_ui.btn_reports.clicked.connect(self.open_raporlama)
         self.dashboard_window.show()
         self.hide()
 
     def reopen_dashboard(self):
-        #self.dashboard_window.close()
         self.dashboard_window.show()
-        self.hide()
-        #self.open_dashboard()
-    
-    def open_raporlama(self):
-        from screens.raporYeni import Ui_Form
-        self.rapor_window = QtWidgets.QWidget()
-        self.rapor_ui = Ui_Form()
-        self.rapor_ui.setupUi(self.rapor_window)
-        self.rapor_ui.pushButton_4.clicked.connect(self.reopen_dashboard)
-        self.rapor_window.show()
         self.hide()
 
 if __name__ == "__main__":

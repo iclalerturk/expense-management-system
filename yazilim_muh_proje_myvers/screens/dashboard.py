@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QTableWidgetItem
 from models.database import Database
@@ -6,6 +5,7 @@ from collections import defaultdict
 import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from models.budget_manager import BudgetManager
 
 class DashboardUI(object):
     def setupUi(self, Form):
@@ -267,10 +267,11 @@ class DashboardUI(object):
         self.budget_table.setEditTriggers(QtWidgets.QAbstractItemView.DoubleClicked | 
                                         QtWidgets.QAbstractItemView.EditKeyPressed)
 
+        self.bd = BudgetManager(self.budget_table)
         # satır seçimi aktif
         self.budget_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         
-        self.populate_budget_table()
+        self.bd.populate_budget_table()
 
         # tablo düzenleme butonları:
         self.table_buttons_layout = QtWidgets.QHBoxLayout()
@@ -294,7 +295,7 @@ class DashboardUI(object):
                 background-color: #27ae60;
             }
         ''')
-        self.btn_add_budget.clicked.connect(self.add_budget_item)  # Sonra tanımlayacağız
+        self.btn_add_budget.clicked.connect(self.bd.add_budget_item)  # Sonra tanımlayacağız
 
         # Düzenle butonu
         self.btn_edit_budget = QtWidgets.QPushButton("Düzenle")
@@ -313,7 +314,7 @@ class DashboardUI(object):
                 background-color: #2980b9;
             }
         ''')
-        self.btn_edit_budget.clicked.connect(self.edit_budget_item)
+        self.btn_edit_budget.clicked.connect(self.bd.edit_budget_item)
 
         # Sil butonu
         self.btn_delete_budget = QtWidgets.QPushButton("Sil")
@@ -332,7 +333,7 @@ class DashboardUI(object):
                 background-color: #c0392b;
             }
         ''')
-        self.btn_delete_budget.clicked.connect(self.delete_budget_item)
+        self.btn_delete_budget.clicked.connect(self.bd.delete_budget_item)
 
         self.table_buttons_layout.addWidget(self.btn_add_budget)
         self.table_buttons_layout.addWidget(self.btn_edit_budget)
@@ -354,19 +355,25 @@ class DashboardUI(object):
         self.page_layout.addSpacing(20)
         
         self.stacked_widget.addWidget(self.content_page)
+        
         # Yeni sayfa: Çalışanlar Sayfası
         self.employees_page = QtWidgets.QWidget()
         self.employees_page.setObjectName("employees_page")
         self.employees_layout = QtWidgets.QVBoxLayout(self.employees_page)
         self.employees_layout.setContentsMargins(30, 30, 30, 30)
 
-
+        # Raporlama Sayfası - DÜZELTME
         self.raporlama_page = QtWidgets.QWidget()
-        self.raporlama_page.setObjectName("employees_page")
+        self.raporlama_page.setObjectName("raporlama_page")
         self.raporlama_layout = QtWidgets.QVBoxLayout(self.raporlama_page)
         self.raporlama_layout.setContentsMargins(30, 30, 30, 30)
-        self.button_layout = QtWidgets.QHBoxLayout()
+        self.raporlama_layout.setSpacing(15)
 
+        # Buton Layoutu
+        self.button_layout = QtWidgets.QHBoxLayout()
+        self.button_layout.setSpacing(15)
+        
+        # Grafik Butonları
         self.button1 = QtWidgets.QPushButton("Birim Bazında Grafikler")
         self.button1.setStyleSheet('''
             QPushButton {
@@ -381,6 +388,7 @@ class DashboardUI(object):
                 background-color: #2980b9;
             }
         ''')
+        
         self.button2 = QtWidgets.QPushButton("Kalem Bazında Grafikler")
         self.button2.setStyleSheet('''
             QPushButton {
@@ -395,6 +403,7 @@ class DashboardUI(object):
                 background-color: #2980b9;
             }
         ''')
+        
         self.button3 = QtWidgets.QPushButton("Kişi Bazlında Grafikler")
         self.button3.setStyleSheet('''
             QPushButton {
@@ -409,25 +418,184 @@ class DashboardUI(object):
                 background-color: #2980b9;
             }
         ''')
+        
+        # Butonları ekle
         self.button_layout.addWidget(self.button1)
         self.button_layout.addWidget(self.button2)
         self.button_layout.addWidget(self.button3)
-
-        # Grafik alanı için boş bir widget (şimdilik)
-        self.graphic_area = QtWidgets.QFrame()
-        self.graphic_area.setFrameShape(QtWidgets.QFrame.StyledPanel)
-        self.graphic_area.setMinimumHeight(300)  # İstersen yüksekliği sabitleyebilirsin
-
-        # Ana layout'a ekle
+        
+        # Önce butonları ekle
         self.raporlama_layout.addLayout(self.button_layout)
-        self.raporlama_layout.addWidget(self.graphic_area)
+        
+        # Scroll Area'yı hazırla
+        self.scroll_area = QtWidgets.QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet('''
+            QScrollArea {
+                background-color: #f8f9fa;
+                border: none;
+            }
+        ''')
 
-        self.graphic_layout = QtWidgets.QVBoxLayout(self.graphic_area)
-        self.canvas = FigureCanvas(Figure(figsize=(6, 4)))
+        # Grafik alanını scroll içinde göster
+        self.graphic_container = QtWidgets.QWidget()
+        self.graphic_container.setMinimumHeight(1000)  # Daha uzun bir alan oluşturarak scroll etmeyi garantile
+        self.graphic_layout = QtWidgets.QVBoxLayout(self.graphic_container)
+        self.graphic_layout.setContentsMargins(15, 15, 15, 15)
+        self.graphic_layout.setSpacing(40) 
+        
+        # Grafik için Filtre Bölümü
+        self.filter_widget = QtWidgets.QWidget()
+        self.filter_widget.setStyleSheet('''
+            QWidget {
+                background-color: white;
+                border-radius: 8px;
+                border: 1px solid #ddd;
+            }
+            QLabel {
+                font-weight: bold;
+                background-color: transparent;
+            }
+            QComboBox {
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                padding: 5px;
+                background: white;
+                min-height: 30px;
+            }
+        ''')
+        self.filter_layout = QtWidgets.QVBoxLayout(self.filter_widget)
+        self.filter_layout.setContentsMargins(15, 15, 15, 15)
+        self.filter_layout.setSpacing(10)
+        
+        # Filtre Elemanları
+        # Kişi Seçimi
+        self.kisi_label = QtWidgets.QLabel("Kişi Seçiniz:")
+        self.kisi_combo = QtWidgets.QComboBox()
+        self.kisi_combo.setMinimumWidth(300)
+        self.sec_buttonKisi = QtWidgets.QPushButton("Grafiği Göster")
+        self.sec_buttonKisi.setStyleSheet('''
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                padding: 10px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+        ''')
+        
+        # Birim Seçimi
+        self.birim_label = QtWidgets.QLabel("Birim Seçiniz:")
+        self.birim_combo = QtWidgets.QComboBox()
+        self.birim_combo.setMinimumWidth(300)
+        self.sec_buttonBirim = QtWidgets.QPushButton("Grafiği Göster")
+        self.sec_buttonBirim.setStyleSheet('''
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                padding: 10px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+        ''')
+        
+        # Kalem Seçimi
+        self.kalem_label = QtWidgets.QLabel("Kalem Seçiniz:")
+        self.kalem_combo = QtWidgets.QComboBox()
+        self.kalem_combo.setMinimumWidth(300)
+        self.sec_buttonKalem = QtWidgets.QPushButton("Grafiği Göster")
+        self.sec_buttonKalem.setStyleSheet('''
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                padding: 10px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+        ''')
+        
+        # Başlangıçta tüm filtreler gizli
+        self.kisi_label.setVisible(False)
+        self.kisi_combo.setVisible(False)
+        self.sec_buttonKisi.setVisible(False)
+        self.birim_label.setVisible(False)
+        self.birim_combo.setVisible(False)
+        self.sec_buttonBirim.setVisible(False)
+        self.kalem_label.setVisible(False)
+        self.kalem_combo.setVisible(False)
+        self.sec_buttonKalem.setVisible(False)
+        
+        # Filtreler ekleniyor
+        self.filter_layout.addWidget(self.kisi_label)
+        self.filter_layout.addWidget(self.kisi_combo)
+        self.filter_layout.addWidget(self.sec_buttonKisi)
+        self.filter_layout.addWidget(self.birim_label)
+        self.filter_layout.addWidget(self.birim_combo)
+        self.filter_layout.addWidget(self.sec_buttonBirim)
+        self.filter_layout.addWidget(self.kalem_label)
+        self.filter_layout.addWidget(self.kalem_combo)
+        self.filter_layout.addWidget(self.sec_buttonKalem)
+        
+        # Filtre Widget'ı Grafik Düzenine Ekleniyor
+        self.graphic_layout.addWidget(self.filter_widget)
+        
+        # Grafik Canvas'ı ekle
+        self.chart_widget = QtWidgets.QWidget()
+        self.chart_widget.setStyleSheet('''
+            background-color: white;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            padding: 10px;
+        ''')
+        self.chart_layout = QtWidgets.QVBoxLayout(self.chart_widget)
+        self.chart_layout.setContentsMargins(15, 15, 15, 15)
+        
+        self.canvas = FigureCanvas(Figure(figsize=(8, 6)))
         self.ax = self.canvas.figure.add_subplot(111)
-        self.graphic_layout.addWidget(self.canvas)
+        self.chart_layout.addWidget(self.canvas)
+        
+        # Grafik Widget'ı ekle
+        self.graphic_layout.addWidget(self.chart_widget)
+        
+        self.chart_widget2 = QtWidgets.QWidget()
+        self.chart_widget2.setStyleSheet('''
+            background-color: white;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            padding: 10px;
+        ''')
+        self.chart_layout2 = QtWidgets.QVBoxLayout(self.chart_widget2)
+        self.chart_layout2.setContentsMargins(15, 15, 15, 15)
 
+        # Başlık ekle
+        self.pie_chart_title = QtWidgets.QLabel("Birim Harcama Dağılımı")
+        self.pie_chart_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #333; background-color: transparent;")
+        self.chart_layout2.addWidget(self.pie_chart_title)
 
+        # Pie chart için canvas oluştur
+        self.canvas2 = FigureCanvas(Figure(figsize=(8, 6)))
+        self.ax2 = self.canvas2.figure.add_subplot(111)
+        self.chart_layout2.addWidget(self.canvas2)
+
+        # İkinci grafik Widget'ı ekle
+        self.graphic_layout.addWidget(self.chart_widget2)
+
+        self.scroll_area.setWidget(self.graphic_container)        
+        # Raporlama layout'a Scroll Area'yı ekle
+        self.raporlama_layout.addWidget(self.scroll_area)
+        
         # Örnek çalışanlar tablosu
         self.employees_table = QtWidgets.QTableWidget()
         self.employees_table.setColumnCount(5)
@@ -453,12 +621,10 @@ class DashboardUI(object):
         ''')
         self.employees_layout.addWidget(self.employees_table)
 
-        # employees_page'i stacked_widget'e ekle
+        # Sayfaları stacked_widget'e ekle
         self.stacked_widget.addWidget(self.employees_page)
-        # raporlama_page'i stacked_widget'e ekle
         self.stacked_widget.addWidget(self.raporlama_page)
-        # raporlama_page'i stacked_widget'e ekle
-        self.stacked_widget.addWidget(self.raporlama_page)
+        
         # içerikleri ana içerik layouta ekle
         self.content_layout.addWidget(self.top_bar)
         self.content_layout.addWidget(self.stacked_widget)
@@ -467,67 +633,405 @@ class DashboardUI(object):
         self.main_layout.addWidget(self.sidebar_widget)
         self.main_layout.addWidget(self.content_widget)
         
+        # Buton bağlantıları
         self.btn_home.setChecked(True)
         self.btn_home.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.content_page))
         self.btn_employees.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.employees_page))
         self.btn_reports.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.raporlama_page))
-        self.button1.clicked.connect(lambda: self.update_graph('birim'))
-        self.button2.clicked.connect(lambda: self.update_graph('kalem'))
-        self.button3.clicked.connect(lambda: self.update_graph('kisi'))
+        
+        self.button1.clicked.connect(self.birim_grafik_baslat)
+        self.button2.clicked.connect(self.kalem_grafik_baslat)
+        self.button3.clicked.connect(self.kisi_grafik_baslat)
+        self.sec_buttonKisi.clicked.connect(self.grafik_kisi_sec)
+        self.sec_buttonKalem.clicked.connect(self.grafik_kalem_sec)
+        self.sec_buttonBirim.clicked.connect(self.grafik_birim_sec)
+
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
 
-    def update_graph(self, kategori):
+    def grafik_kisi_sec(self):
+        secim = self.kisi_combo.currentText()
+        if not secim:
+            return
+        calisan_id = secim.split(" - ")[0]
+        self.grafik_guncelle_filtreli("kisi", calisan_id)
+        self.pie_chart_calisan_vs_digerleri(calisan_id)
+        self.chart_widget2.setVisible(True)
+
+    def grafik_kalem_sec(self):
+        secim = self.kalem_combo.currentText()
+        if not secim:
+            return
+        kalem_id = secim.split(" - ")[0]
+        self.grafik_guncelle_kalem_birim(kalem_id)
+        self.pie_chart_kalem_guncelle(secim)
+        self.chart_widget2.setVisible(True)
+    
+    def grafik_birim_sec(self):
+        secim_birim = self.birim_combo.currentText()
+        if not secim_birim:
+            return
+        birim_id = int(secim_birim.split(" - ")[0])
+        #self.grafik_guncelle_filtreli("birim", birim_id)
+        self.grafik_guncelle_birim_kalem(birim_id)
+        self.pie_chart_birim_guncelle(secim_birim)
+        self.chart_widget2.setVisible(True)
+    
+    def pie_chart_birim_guncelle(self, secilen_birim):
+        db = Database()
+
+        birim_parcalari = secilen_birim.split(" - ")
+        if len(birim_parcalari) >= 1:
+            secilen_birim_id = birim_parcalari[0]  # "1 - Satış" -> "1"
+            try:
+                secilen_birim_id = int(secilen_birim_id)
+            except ValueError:
+                print(f"Birim ID'si bir sayı değil: {secilen_birim_id}")
+                return
+        else:
+            print(f"Birim adı ayrıştırılamadı: {secilen_birim}")
+            return
+        
+        print(f"Seçilen birim ID: {secilen_birim_id}")
+        
+        # Tüm birimlerin toplam harcamalarını al
+        tum_birim_harcamalari = db.get_birim_harcamalari()  # birimId, toplam_tutar şeklinde dönüyor
+        
+        secilen_birim_harcama = 0
+        diger_birimler_harcama = 0
+        
+        # Harcama tutarlarını topla
+        for birim_id, harcama in tum_birim_harcamalari:
+            if birim_id == secilen_birim_id:
+                secilen_birim_harcama = harcama
+            else:
+                diger_birimler_harcama += harcama
+        
+        print(f"Seçilen birim ({secilen_birim}) harcaması: {secilen_birim_harcama}")
+        print(f"Diğer birimler toplam harcaması: {diger_birimler_harcama}")
+        
+        # Pie chart'ı temizle ve yeniden çiz
+        self.ax2.clear()
+        
+        # Birim adının sadece isim kısmını kullan (ID'yi çıkar)
+        birim_adi = " - ".join(birim_parcalari[1:]) if len(birim_parcalari) > 1 else secilen_birim
+        
+        labels = [birim_adi, 'Diğer Birimler']
+        sizes = [secilen_birim_harcama, diger_birimler_harcama]
+        
+        # Eğer herhangi bir harcama yoksa, varsayılan değerler kullan
+        if secilen_birim_harcama == 0 and diger_birimler_harcama == 0:
+            print("Hiç harcama verisi bulunamadı!")
+            sizes = [1, 1]  # Görsel olarak eşit göstermek için
+        
+        colors = ['#3498db', '#e74c3c']
+        explode = (0.1, 0)  # Seçilen birimi vurgulamak için
+        
+        self.ax2.pie(sizes, explode=explode, labels=labels, colors=colors,
+                autopct='%1.1f%%', shadow=True, startangle=90)
+        self.ax2.axis('equal')  # Dairesel gösterim için
+        
+        self.pie_chart_title.setText(f"{birim_adi} Birimi vs Diğer Birimler Harcama Dağılımı")
+        
+        self.canvas2.draw()
+        
+    def grafik_guncelle_kalem_birim(self, kalem_id):
         try:
             db = Database()
-            data = db.grafik_verisi_getir(kategori)
+            data = db.get_birim_comparison_by_kalem(kalem_id)
+            
+            if not data:
+                QtWidgets.QMessageBox.warning(self.raporlama_page, "Uyarı", "Kalem için veri bulunamadı.")
+                return
+
+            self.ax.clear()
+            birim_adlari = [row[0] for row in data]
+            total_amounts = [row[1] for row in data]
+
+            index = np.arange(len(birim_adlari))
+            bar_width = 0.6
+
+            self.ax.bar(index, total_amounts, bar_width, color='#2ecc71')
+            
+            self.ax.set_xlabel('Birim Adı')
+            self.ax.set_ylabel('Toplam Harcama (TL)')
+            self.ax.set_title('Kalem Bazında Birim Harcamaları')
+            self.ax.set_xticks(index)
+            self.ax.set_xticklabels(birim_adlari, rotation=0, ha='right')
+            self.canvas.draw()
+
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self.raporlama_page, "Hata", f"Bir hata oluştu: {str(e)}")
+
+    def pie_chart_kalem_guncelle(self, secilen_kalem):
+        db = Database()
+        
+        # İlk olarak kalem adından ID'yi çıkaralım (format: "1 - Kırtasiye")
+        kalem_parcalari = secilen_kalem.split(" - ")
+        
+        if len(kalem_parcalari) >= 1:
+            secilen_kalem_id = kalem_parcalari[0]
+            try:
+                secilen_kalem_id = int(secilen_kalem_id)
+            except ValueError:
+                print(f"Kalem ID'si bir sayı değil: {secilen_kalem_id}")
+                return
+        else:
+            print(f"Kalem adı ayrıştırılamadı: {secilen_kalem}")
+            return
+        
+        print(f"Seçilen kalem ID: {secilen_kalem_id}")
+        
+        # Tüm kalemlerin toplam harcamalarını al
+        tum_kalem_harcamalari = db.get_kalem_harcamalari()  # kalemId, toplam_tutar şeklinde dönüyor
+        
+        secilen_kalem_harcama = 0
+        diger_kalemler_harcama = 0
+        
+        # Harcama tutarlarını topla
+        for kalem_id, harcama in tum_kalem_harcamalari:
+            if kalem_id == secilen_kalem_id:
+                secilen_kalem_harcama = harcama
+            else:
+                diger_kalemler_harcama += harcama
+        
+        print(f"Seçilen kalem ({secilen_kalem}) harcaması: {secilen_kalem_harcama}")
+        print(f"Diğer kalemler toplam harcaması: {diger_kalemler_harcama}")
+        
+        # Pie chart'ı temizle ve yeniden çiz
+        self.ax2.clear()
+        
+        # Kalem adının sadece isim kısmını kullan (ID'yi çıkar)
+        kalem_adi = " - ".join(kalem_parcalari[1:]) if len(kalem_parcalari) > 1 else secilen_kalem
+        
+        labels = [kalem_adi, 'Diğer Kalemler']
+        sizes = [secilen_kalem_harcama, diger_kalemler_harcama]
+        
+        # Eğer herhangi bir harcama yoksa, varsayılan değerler kullan
+        if secilen_kalem_harcama == 0 and diger_kalemler_harcama == 0:
+            print("Hiç harcama verisi bulunamadı!")
+            sizes = [1, 1]  # Görsel olarak eşit göstermek için
+        
+        colors = ['#2ecc71', '#e74c3c']
+        explode = (0.1, 0)
+        
+        self.ax2.pie(sizes, explode=explode, labels=labels, colors=colors,
+                autopct='%1.1f%%', shadow=True, startangle=90)
+        self.ax2.axis('equal')
+        
+        self.pie_chart_title.setText(f"{kalem_adi} Kalemi vs Diğer Kalemler Harcama Dağılımı")
+        
+        self.canvas2.draw()
+    
+    def pie_chart_calisan_vs_digerleri(self, secilen_calisan_id):
+        try:
+            calisan_id = None
+            secilen_kisi_adi = None
+            
+            if isinstance(secilen_calisan_id, int) or (isinstance(secilen_calisan_id, str) and secilen_calisan_id.isdigit()):
+                calisan_id = int(secilen_calisan_id)
+                db = Database()
+                result = db.get_calisan_by_id(calisan_id)
+                if result:
+                    secilen_kisi_adi = result
+                else:
+                    secilen_kisi_adi = f"Çalışan {calisan_id}"
+            else:
+                parts = str(secilen_calisan_id).split(" - ")
+                if len(parts) >= 2:
+                    try:
+                        calisan_id = int(parts[0])
+                        secilen_kisi_adi = parts[1].strip()
+                    except ValueError:
+                        print(f"Kişi ID'si ayrıştırılamadı: {secilen_calisan_id}")
+                        QtWidgets.QMessageBox.warning(self.raporlama_page, "Hata", "Seçilen kişi formatı geçersiz.")
+                        return
+                else:
+                    print(f"Kişi adı ayrıştırılamadı: {secilen_calisan_id}")
+                    QtWidgets.QMessageBox.warning(self.raporlama_page, "Hata", "Seçilen kişi formatı geçersiz.")
+                    return
+                    
+            print(f"Seçilen kişi ID: {calisan_id}, adı: {secilen_kisi_adi}")
+            
+            db = Database()
+            sonuclar = db.calisan_digerleri_by_birim(calisan_id)
+            
+            if not sonuclar or len(sonuclar) < 2:
+                QtWidgets.QMessageBox.information(self.raporlama_page, "Bilgi", 
+                                                "Karşılaştırma için veri bulunamadı.")
+                return
+            
+            secilen_kisi_harcama = sonuclar[0] or 0  # İlk değer seçilen çalışanın toplamı
+            diger_kisiler_harcama = sonuclar[1] or 0  # İkinci değer diğer çalışanların toplamı
+            
+            print(f"Seçilen kişi ({secilen_kisi_adi}) harcaması: {secilen_kisi_harcama}")
+            print(f"Diğer kişilerin toplam harcaması: {diger_kisiler_harcama}")
+            
+            self.ax2.clear()
+            
+            if secilen_kisi_harcama == 0 and diger_kisiler_harcama == 0:
+                QtWidgets.QMessageBox.information(self.raporlama_page, "Bilgi", 
+                                                "Seçilen kişi ve diğerleri için harcama bulunamadı.")
+
+                self.pie_chart_title.setText(f"{secilen_kisi_adi} vs Diğer Kişiler Harcama Dağılımı")
+                self.canvas2.draw()
+                return
+
+            if secilen_kisi_harcama == 0:
+                secilen_kisi_harcama = 0.001  # Çok küçük bir değer
+            if diger_kisiler_harcama == 0:
+                diger_kisiler_harcama = 0.001  # Çok küçük bir değer
+            
+            sizes = [secilen_kisi_harcama, diger_kisiler_harcama]
+            labels = [secilen_kisi_adi, 'Diğer Kişiler']
+            colors = ['#2ecc71', '#e74c3c']
+            explode = (0.1, 0)  # Seçilen kişiyi vurgulamak için
+
+            self.ax2.pie(sizes, explode=explode, labels=labels, colors=colors,
+                    autopct='%1.1f%%', shadow=True, startangle=90)
+            self.ax2.axis('equal')
+            
+            self.pie_chart_title.setText(f"{secilen_kisi_adi} vs Diğer Kişiler Harcama Dağılımı")
+            self.canvas2.draw()
+            
+        except Exception as e:
+            print(f"Pie chart oluşturulurken hata: {str(e)}")
+            QtWidgets.QMessageBox.critical(self.raporlama_page, "Hata", 
+                                        f"Grafik oluşturulurken bir hata oluştu: {str(e)}")
+        
+    def kisi_grafik_baslat(self):
+        self.kalem_label.setVisible(False)
+        self.kalem_combo.setVisible(False)
+        self.sec_buttonKalem.setVisible(False)
+        self.birim_label.setVisible(False)
+        self.birim_combo.setVisible(False)
+        self.sec_buttonBirim.setVisible(False)
+        self.kisi_label.setVisible(True)
+        self.kisi_combo.clear()
+            # self.kisi_combo.addItems(veriler.keys())  # Kişi adları
+        self.kisi_combo.setVisible(True)
+        self.sec_buttonKisi.setVisible(True)
+        db=Database()
+        data = db.get_all_calisanlar()
+        self.kisi_combo.clear()
+        for row in data:
+            calisan_id = row[0]
+            isim = row[1]
+            soyisim = row[2]
+            birim = row[3]
+            email = row[4]
+            self.kisi_combo.addItem(f"{calisan_id} - {isim} {soyisim} - {birim} - {email}")  # Kişi adları ve ID'leri
+
+    def birim_grafik_baslat(self):
+        self.kisi_label.setVisible(False)
+        self.kisi_combo.setVisible(False)
+        self.sec_buttonKisi.setVisible(False)
+        self.kalem_label.setVisible(False)
+        self.kalem_combo.setVisible(False)
+        self.sec_buttonKalem.setVisible(False)
+        self.birim_label.setVisible(True)
+        self.birim_combo.clear()
+        # self.birim_combo.addItems(veriler.keys())  # Birim adları
+        self.birim_combo.setVisible(True)
+        self.sec_buttonBirim.setVisible(True)
+        db=Database()
+        data = db.get_birimler()
+        self.birim_combo.clear()
+        for row in data:
+            birim_id = row[0]
+            birim_adi = row[1]
+            self.birim_combo.addItem(f"{birim_id} - {birim_adi}")  # Birim adları ve ID'leri
+
+    def kalem_grafik_baslat(self):
+        self.kisi_label.setVisible(False)
+        self.kisi_combo.setVisible(False)
+        self.sec_buttonKisi.setVisible(False)
+        self.birim_label.setVisible(False)
+        self.birim_combo.setVisible(False)
+        self.sec_buttonBirim.setVisible(False)
+        self.kalem_label.setVisible(True)
+        self.kalem_combo.clear()
+        # self.kalem_combo.addItems(veriler.keys())  # Kalem adları
+        self.kalem_combo.setVisible(True)
+        self.sec_buttonKalem.setVisible(True)
+        db=Database()
+        data = db.get_kalemler()
+        self.kalem_combo.clear()
+        for row in data:
+            kalem_id = row[0]
+            kalem_adi = row[1]
+            self.kalem_combo.addItem(f"{kalem_id} - {kalem_adi}")  # Kalem adları ve ID'leri
+
+    def grafik_guncelle_filtreli(self, kategori, secilen_id):
+        try:
+            db = Database()
+            data = db.grafik_verisi_getir(kategori, secilen_id)  # Parametreli veri çekimi
             
             if not data:
                 QtWidgets.QMessageBox.warning(self.raporlama_page, "Uyarı", f"{kategori.capitalize()} için veri bulunamadı.")
                 return
-                
-            # Mevcut grafiği temizle
+
             self.ax.clear()
-            
-            # Tüm yılları topla ve sırala
             all_years = set()
             for entity_data in data.values():
                 all_years.update(entity_data.keys())
             all_years = sorted(all_years)
-            
-            # Her bir varlık için yıllara göre verileri düzenle
             bars = []
-            bar_width = 0.8 / len(data)  # Çubukların genişliği
+            bar_width = 0.8 / len(data)
             index = np.arange(len(all_years))
-            
-            # Her bir varlık için çubuk ekle
+
             for i, (entity_name, yearly_data) in enumerate(data.items()):
                 values = [yearly_data.get(year, 0) for year in all_years]
                 position = index + i * bar_width
                 bar = self.ax.bar(position, values, bar_width, label=entity_name)
                 bars.append(bar)
-            
-            # Eksen etiketleri ve başlık
+
             kategori_basliklari = {
-                'birim': 'Birim Bazında Yıllık Harcamalar',
+                'birim': 'Birim - Kalem Bazında Yıllık Harcamalar',
                 'kalem': 'Harcama Kalemi Bazında Yıllık Harcamalar',
                 'kisi': 'Kişi Bazında Yıllık Harcamalar'
             }
-            
+
             self.ax.set_xlabel('Yıl')
             self.ax.set_ylabel('Toplam Harcama (TL)')
             self.ax.set_title(kategori_basliklari.get(kategori, 'Yıllık Harcamalar'))
             self.ax.set_xticks(index + bar_width * (len(data) - 1) / 2)
             self.ax.set_xticklabels(all_years)
             self.ax.legend()
-            
-            # Grafiği güncelle
             self.canvas.draw()
-            
+
         except Exception as e:
-            # Use a valid parent widget (self.raporlama_page is a QWidget)
             QtWidgets.QMessageBox.critical(self.raporlama_page, "Hata", f"Grafik güncellenirken bir hata oluştu: {str(e)}")
 
+    def grafik_guncelle_birim_kalem(self, birim_id):
+        try:
+            db = Database()
+            data = db.get_kalem_comparison_by_birim(birim_id)
+            
+            if not data:
+                QtWidgets.QMessageBox.warning(self.raporlama_page, "Uyarı", "Birim için veri bulunamadı.")
+                return
+
+            self.ax.clear()
+            kalem_adlari = [row[0] for row in data]
+            total_amounts = [row[1] for row in data]
+
+            index = np.arange(len(kalem_adlari))
+            bar_width = 0.6
+
+            self.ax.bar(index, total_amounts, bar_width)
+            
+            self.ax.set_xlabel('Kalem Adı')
+            self.ax.set_ylabel('Toplam Harcama (TL)')
+            self.ax.set_title('Birim Bazında Kalem Harcamaları')
+            self.ax.set_xticks(index)
+            self.ax.set_xticklabels(kalem_adlari, rotation=0, ha='right')
+            self.ax.legend(['Harcamalar'])
+            self.canvas.draw()
+
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self.raporlama_page, "Hata", f"Bir hata oluştu: {str(e)}")
+    
     def create_menu_button(self, text, icon_path):
         button = QtWidgets.QPushButton(text)
         button.setIcon(QtGui.QIcon(icon_path))
@@ -593,36 +1097,6 @@ class DashboardUI(object):
         layout.addItem(QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum))
         
         return card
-    
-    def populate_budget_table(self):
-        db = Database()
-        data = db.get_unit_and_kalem_budget()  # DB sınıfındaki metodun döndürdüğü liste
-
-        self.budget_table.setRowCount(len(data))
-
-        for row_index, row in enumerate(data):
-            birim_adi = QTableWidgetItem(str(row["Birim Adı"]))
-            kalem_adi = QTableWidgetItem(str(row["Kalem Adı"]))
-            limit_butce = row['Limit Bütçe']
-            esik_deger = row['Aşım Oranı']
-            # get_unit_and_kalem_budget'den gelen yeni anahtar isimlerini kullan
-            toplam_butce = row['Toplam Bütçe'] if 'Toplam Bütçe' in row else row['Tahsis Edilen Bütçe']
-            kullanilan_butce = row['Kullanılan Bütçe']
-            
-            # QTableWidgetItem'leri oluştur
-            limit_butce_item = QTableWidgetItem(f"{limit_butce:.2f}")
-            toplam_butce_item = QTableWidgetItem(f"{toplam_butce:.2f}")
-            kullanilan_item = QTableWidgetItem(f"{kullanilan_butce:.2f}")
-            esik_deger_item = QTableWidgetItem(f"{int(esik_deger)}")
-            kalan_item = QTableWidgetItem(f"{(toplam_butce - kullanilan_butce):.2f}")
-
-            self.budget_table.setItem(row_index, 0, birim_adi)
-            self.budget_table.setItem(row_index, 1, kalem_adi)
-            self.budget_table.setItem(row_index, 2, toplam_butce_item)
-            self.budget_table.setItem(row_index, 3, kullanilan_item)
-            self.budget_table.setItem(row_index, 4, kalan_item)
-            self.budget_table.setItem(row_index, 5, limit_butce_item)
-            self.budget_table.setItem(row_index, 6, esik_deger_item)
 
     def populate_employee_table(self):
         db = Database()
@@ -652,337 +1126,6 @@ class DashboardUI(object):
                     item = self.employees_table.item(row_index, col_index)
                     item.setBackground(QtGui.QColor(245, 245, 245))  # Alternatif renk
 
-    def add_budget_item(self):
-        """
-        Yeni limit bütçe eklemek için bir dialog gösterir ve bütçeyi veritabanına ekler
-        """
-        db = Database()
-        dialog = QtWidgets.QDialog()
-        dialog.setWindowTitle("Yeni Bütçe Ekle")
-        dialog.setFixedWidth(800)
-        dialog.setStyleSheet("background-color: white;")
-        
-        layout = QtWidgets.QVBoxLayout(dialog)
-        
-        title_label = QtWidgets.QLabel("Yeni Bütçe Ekleme Ekranı")
-        title_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;")
-        layout.addWidget(title_label)
-        
-        form_layout = QtWidgets.QFormLayout()
-        birim_combo = QtWidgets.QComboBox()
-        birim_combo.addItem("Birim Seçin", None)
-        
-        birimler = [
-            (1, "Satış"),
-            (2, "Pazarlama"),
-            (3, "Ar-Ge"),
-            (4, "Muhasebe"),
-            (5, "IT")
-        ]
-        for birim_id, birim_adi in birimler:
-            birim_combo.addItem(birim_adi, birim_id)
-        
-        # Kalem seçimi
-        kalem_combo = QtWidgets.QComboBox()
-        kalem_combo.addItem("Kalem Seçin", None)
-        
-        # Veritabanından kalem listesini al
-        try:
-            db.cursor.execute("SELECT kalemAd FROM harcamakalemi")
-            kalemler = [row[0] for row in db.cursor.fetchall()]
-            
-            for kalem_adi in kalemler:
-                kalem_combo.addItem(kalem_adi, kalem_adi)
-        except Exception as e:
-            print(f"Kalem listesi yükleme hatası: {e}")
-            kalemler = ["Taksi", "Otopark", "Benzin", "Ofis Malzemesi", "Konaklama", "Yemek"]
-            for kalem_adi in kalemler:
-                kalem_combo.addItem(kalem_adi, kalem_adi)
-        
-        # Toplam bütçe girişi için validator ekle
-        l_butce_input = QtWidgets.QLineEdit()
-        l_butce_input.setPlaceholderText("0.00")
-        validator = QtGui.QDoubleValidator()
-        validator.setBottom(0.0)  # Negatif değer girilememesi için
-        l_butce_input.setValidator(validator)
-        
-        butce_input = QtWidgets.QLineEdit()
-        butce_input.setPlaceholderText("0.00")
-        validator = QtGui.QDoubleValidator()
-        validator.setBottom(0.0)
-        butce_input.setValidator(validator)
-        
-        # eşik değer için slider ve ilgili bileşenler
-        esik_deger_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        esik_deger_slider.setMinimum(0)  # Minimum değer
-        esik_deger_slider.setMaximum(100)  # Maksimum değer
-        esik_deger_slider.setValue(20)
-        esik_deger_slider.setTickPosition(QtWidgets.QSlider.TicksBelow)
-        esik_deger_slider.setTickInterval(10)
-
-        esik_deger_label = QtWidgets.QLabel(f"Aşım Oranı: 20%")
-
-        esik_deger_slider.valueChanged.connect(lambda value: esik_deger_label.setText(f"Aşım Oranı: {value}%"))
-        
-        # Slider değeri widget'ı
-        esik_slider_widget = QtWidgets.QWidget()
-        esik_slider_layout = QtWidgets.QVBoxLayout(esik_slider_widget)
-        esik_slider_layout.addWidget(esik_deger_label)
-        esik_slider_layout.addWidget(esik_deger_slider)
-        esik_slider_widget.setLayout(esik_slider_layout)
-        
-        form_layout.addRow("Birim:", birim_combo)
-        form_layout.addRow("Harcama Kalemi:", kalem_combo)
-        form_layout.addRow("Limit Bütçe: ", l_butce_input)
-        form_layout.addRow("Bütçe: ", butce_input)
-        form_layout.addRow("Aşım Eşik Değeri:", esik_slider_widget)
-        
-        layout.addLayout(form_layout)
-        
-        # Butonlar
-        buttons = QtWidgets.QDialogButtonBox(
-            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
-        )
-        buttons.accepted.connect(dialog.accept)
-        buttons.rejected.connect(dialog.reject)
-        
-        layout.addWidget(buttons)
-        
-        if dialog.exec_() == QtWidgets.QDialog.Accepted:
-            birim_id = birim_combo.currentData()
-            kalem_adi = kalem_combo.currentData()
-            
-            try:
-                l_butce_miktari = float(l_butce_input.text() or 0)
-                butce_miktari = float(butce_input.text() or 0)
-            except ValueError:
-                l_butce_miktari = 0
-                butce_miktari = 0
-            
-            if birim_id is None:
-                QtWidgets.QMessageBox.warning(None, "Hata", "Lütfen bir birim seçiniz")
-                return
-                
-            if kalem_adi is None:
-                QtWidgets.QMessageBox.warning(None, "Hata", "Lütfen bir harcama kalemi seçiniz")
-                return
-            
-            if l_butce_miktari <= 0:
-                QtWidgets.QMessageBox.warning(None, "Hata", "Lütfen geçerli bir limit bütçe miktarı giriniz")
-                return
-            
-            if butce_miktari <= 0:
-                QtWidgets.QMessageBox.warning(None, "Hata", "Lütfen geçerli bir bütçe miktarı giriniz")
-                return
-            
-            res = db.add_butce(kalem_adi, birim_id, butce_miktari, l_butce_miktari, esik_deger_slider.value())
-            
-            if res == "basarili":
-                QtWidgets.QMessageBox.information(None, "Başarılı", "Bütçe başarıyla eklendi")
-                self.load_budget_data()  # Tabloyu yeniler
-            elif res == "var":
-                QtWidgets.QMessageBox.warning(None, "Kalem Var", "Bu birim için bu kalem limiti zaten ekli.")
-            else:
-                QtWidgets.QMessageBox.critical(None, "Başarısız", "Bütçe eklenemedi. Kalem bulunamadı veya bir hata oluştu.")
-    
-    def edit_budget_item(self):
-        selected_rows = self.budget_table.selectedItems() #düzenlenmek istenen row seçilmeli önce
-    
-        if not selected_rows:
-            QtWidgets.QMessageBox.warning(None, "Uyarı", "Lütfen düzenlemek için bir bütçe kalemi seçin")
-            return
-        
-        selected_row = selected_rows[0].row()
-        
-        birim_adi = self.budget_table.item(selected_row,0).text()
-        kalem_adi = self.budget_table.item(selected_row, 1).text()
-        tahsis_butce = float(self.budget_table.item(selected_row, 2).text().replace(",", "."))
-        kullanilan_butce = float(self.budget_table.item(selected_row, 3).text().replace(",", "."))
-        limit_butce = float(self.budget_table.item(selected_row, 5).text().replace(",", "."))
-        esik_deger = int(self.budget_table.item(selected_row, 6).text().replace(",","."))
-        #düzenleme içinn dialog:
-        db = Database()
-        dialog = QtWidgets.QDialog()
-        dialog.setWindowTitle("Bütçe Düzenle")
-        dialog.setFixedWidth(800)
-        dialog.setStyleSheet("background-color: white;")
-        
-        layout = QtWidgets.QVBoxLayout(dialog)
-        
-        # Başlık ve açıklama
-        title_label = QtWidgets.QLabel("Bütçe Düzenleme Ekranı")
-        title_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;")
-        layout.addWidget(title_label)
-    
-        form_layout = QtWidgets.QFormLayout()
-        
-        # Düzenlenemez alanlar
-        birim_label = QtWidgets.QLineEdit()
-        birim_label.setText(birim_adi)
-        birim_label.setReadOnly(True)
-        birim_label.setStyleSheet("background-color: #ecf0f1; color: #7f8c8d;")
-        
-        try:
-            db.cursor.execute("SELECT birimId FROM birim WHERE birimIsmi = ?", (birim_adi,))
-            birim_id_result = db.cursor.fetchone()
-            if birim_id_result:
-                birim_id = birim_id_result[0]
-            else:
-                QtWidgets.QMessageBox.critical(None, "Hata", "Seçilen birim bulunamadı")
-                return
-        except Exception as e:
-            print(f"Birim ID bulma hatası: {e}")
-            QtWidgets.QMessageBox.critical(None, "Hata", f"Birim bilgisi alınamadı: {e}")
-            return
-
-        kalem_label = QtWidgets.QLineEdit()
-        kalem_label.setText(kalem_adi)
-        kalem_label.setReadOnly(True)
-        kalem_label.setStyleSheet("background-color: #ecf0f1; color: #7f8c8d;")
-        
-        # Düzenlenebilir alanlar - sarı arka plan ile belirginleştiriliyor
-        l_butce_input = QtWidgets.QLineEdit()
-        l_butce_input.setText(str(limit_butce))
-        l_butce_input.setStyleSheet("background-color: #fffde7; font-weight: bold;")
-        validator = QtGui.QDoubleValidator()
-        validator.setBottom(0.0)  # negatif değer girilememesi için
-        l_butce_input.setValidator(validator)
-        
-        tahsis_butce_input = QtWidgets.QLineEdit()
-        tahsis_butce_input.setText(str(tahsis_butce))
-        tahsis_butce_input.setStyleSheet("background-color: #fffde7; font-weight: bold;")
-        validator = QtGui.QDoubleValidator()
-        validator.setBottom(0.0)
-        tahsis_butce_input.setValidator(validator)
-        
-        kullanilan_butce_label = QtWidgets.QLineEdit()
-        kullanilan_butce_label.setText(str(kullanilan_butce))
-        kullanilan_butce_label.setReadOnly(True)
-        kullanilan_butce_label.setStyleSheet("background-color: #ecf0f1; color: #7f8c8d;")
-        
-        # Slider (düzenlenebilir alan)
-        esik_deger_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        esik_deger_slider.setMinimum(0)  # Minimum değer
-        esik_deger_slider.setMaximum(100)  # Maksimum değer
-        esik_deger_slider.setValue(esik_deger)  # Mevcut değeri ayarla
-        esik_deger_slider.setTickPosition(QtWidgets.QSlider.TicksBelow)  # İşaretlerin aşağıda olmasını sağla
-        esik_deger_slider.setTickInterval(10)  # İşaretlerin her 10 birim aralıkla yerleşmesini sağla
-        esik_deger_slider.setStyleSheet("background-color: #fffde7;")
-
-        # Slider değerini gösteren etiket
-        esik_deger_label = QtWidgets.QLabel(f"Aşım Oranı: {esik_deger}%")
-        esik_deger_label.setStyleSheet("font-weight: bold; color: #2c3e50;")
-        esik_deger_slider.valueChanged.connect(lambda value: esik_deger_label.setText(f"Aşım Oranı: {value}%")) #slider değişince etiket güncellenir
-        
-        # Slider değeri widget'ı
-        esik_slider_widget = QtWidgets.QWidget()
-        esik_slider_widget.setStyleSheet("background-color: #fffde7; border-radius: 4px; padding: 5px;")
-        esik_slider_layout = QtWidgets.QVBoxLayout(esik_slider_widget)
-        esik_slider_layout.addWidget(esik_deger_label)
-        esik_slider_layout.addWidget(esik_deger_slider)
-        esik_slider_widget.setLayout(esik_slider_layout)
-        
-        # Form düzeni - etiketlerde düzenlenebilir alanlar belirtiliyor
-        form_layout.addRow("Birim (Düzenlenemez):", birim_label)
-        form_layout.addRow("Harcama Kalemi (Düzenlenemez):", kalem_label)
-        form_layout.addRow("Birim Bütçe (Düzenlenebilir):", tahsis_butce_input)
-        form_layout.addRow("Kullanılan Bütçe (Düzenlenemez):", kullanilan_butce_label)
-        form_layout.addRow("Limit Bütçe (Düzenlenebilir):", l_butce_input)
-        form_layout.addRow("Aşım Oranı (Düzenlenebilir):", esik_slider_widget)
-        
-        layout.addLayout(form_layout)
-
-        #diyalog için butonlar
-        buttons = QtWidgets.QDialogButtonBox(
-        QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
-        )
-        
-        # Özel buton isimleri
-        buttons.button(QtWidgets.QDialogButtonBox.Ok).setText("Kaydet")
-        buttons.button(QtWidgets.QDialogButtonBox.Cancel).setText("İptal")
-        
-        buttons.accepted.connect(dialog.accept)
-        buttons.rejected.connect(dialog.reject)
-        
-        layout.addWidget(buttons)
-        
-        if dialog.exec_() == QtWidgets.QDialog.Accepted:
-            try:
-                yeni_l_butce_miktari = float(l_butce_input.text() or 0)
-                yeni_butce_miktari = float(tahsis_butce_input.text() or 0)
-                yeni_esik_deger = esik_deger_slider.value()
-            except ValueError:
-                QtWidgets.QMessageBox.warning(None, "Hata", "Geçersiz bütçe değeri")
-                return
-            
-            if yeni_l_butce_miktari <= 0:
-                QtWidgets.QMessageBox.warning(None, "Hata", "Lütfen geçerli bir limit bütçe miktarı giriniz")
-                return
-            
-            if yeni_butce_miktari <= 0:
-                QtWidgets.QMessageBox.warning(None, "Hata", "Lütfen geçerli bir bütçe miktarı giriniz")
-                return
-            
-            # veritabanı güncelleme
-            res = db.edit_limit_butce(kalem_adi, birim_id, yeni_butce_miktari, yeni_l_butce_miktari, yeni_esik_deger)
-            
-            if res == "basarili":
-                QtWidgets.QMessageBox.information(None, "Başarılı", "Bütçe başarıyla güncellendi")
-                self.load_budget_data()
-            elif res == "basarisiz":
-                QtWidgets.QMessageBox.warning(None, "Hata", "Belirtilen harcama kalemi bulunamadı")
-            elif res == "kayit_yok":
-                QtWidgets.QMessageBox.warning(None, "Hata", "Bu birim ve kalem için bütçe kaydı bulunamadı")
-            else:
-                QtWidgets.QMessageBox.critical(None, "Başarısız", f"Bütçe güncellenemedi: {res}")
-                
-    def load_budget_data(self):
-        try:
-            # Mevcut sütun genişliklerini kaydet
-            column_widths = []
-            for i in range(self.budget_table.columnCount()):
-                column_widths.append(self.budget_table.columnWidth(i))
-            
-            # Tablodaki satırları temizleyip yeniden doldur
-            self.budget_table.setRowCount(0)
-            self.populate_budget_table()
-            
-            for i in range(len(column_widths)):
-                if i < self.budget_table.columnCount() and column_widths[i] > 0:
-                    self.budget_table.setColumnWidth(i, column_widths[i])
-        except Exception as e:
-            print(f"Bütçe verilerini yüklerken hata oluştu: {e}")
-            QtWidgets.QMessageBox.critical(None, "Hata", f"Bütçe verilerini yüklerken bir sorun oluştu: {e}")
-
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Yönetici Paneli"))
-        
-    def delete_budget_item(self):
-        db = Database()
-        selected_rows = self.budget_table.selectionModel().selectedRows()
-        if not selected_rows:
-            QtWidgets.QMessageBox.warning(None, "Uyarı", "Lütfen silmek için bir bütçe seçiniz")
-            return
-        
-        row_index = selected_rows[0].row()
-        birim_adi = self.budget_table.item(row_index, 0).text()
-        kalem_adi = self.budget_table.item(row_index, 1).text()
-        limit_butce = float(self.budget_table.item(row_index, 5).text().replace(",", "."))
-        
-        # onay ekranı:
-        reply = QtWidgets.QMessageBox()
-        reply.setWindowTitle("Bütçe Silme Onayı")
-        reply.setText(f"{birim_adi} biriminin {kalem_adi} kalemini silmek istediğinize emin misiniz?")
-        reply.setIcon(QtWidgets.QMessageBox.Question)
-
-        evet_button = reply.addButton("Evet", QtWidgets.QMessageBox.YesRole)
-        hayir_button = reply.addButton("Hayır", QtWidgets.QMessageBox.NoRole)
-        reply.setDefaultButton(hayir_button)  # default
-
-        reply.exec_()
-
-        if reply.clickedButton() == evet_button:
-            db.delete_limit_butce(kalem_adi, birim_adi, limit_butce)
-            self.load_budget_data()
-            QtWidgets.QMessageBox.information(None, "Başarılı", "Bütçe başarıyla silindi.")
