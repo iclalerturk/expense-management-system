@@ -25,7 +25,7 @@ class giderApp(QtWidgets.QWidget, LoginUi):
             elif user["user_type"] == "yonetici":
                 QtWidgets.QMessageBox.information(self, "Bilgi", "Yönetici paneli henüz hazır değil.")
             elif user["user_type"] == "calisan":
-                QtWidgets.QMessageBox.information(self, "Bilgi", "Çalışan paneli henüz hazır değil.")
+                self.open_employee_dashboard(user)  # Çalışan panelini aç
             elif user["user_type"] == "muhasebe":
                 QtWidgets.QMessageBox.information(self, "Bilgi", "Muhasebe paneli henüz hazır değil.")
         else:
@@ -39,6 +39,28 @@ class giderApp(QtWidgets.QWidget, LoginUi):
         self.dashboard_ui.btn_home.clicked.connect(self.reopen_dashboard)
         self.dashboard_window.show()
         self.hide()
+
+    def open_employee_dashboard(self, user=None):
+        # Çalışan arayüzünü yükle
+        from screens.employee_dashboard import EmployeeDashboardUI
+        self.employee_window = QtWidgets.QWidget()
+        self.employee_ui = EmployeeDashboardUI()
+        self.employee_ui.setupUi(self.employee_window)
+        self.employee_ui.set_user(user)
+        
+        
+        # Çıkış butonu işlevi
+        self.employee_ui.btn_logout.clicked.connect(self.logout_employee)
+        
+        # Arayüzü göster
+        self.employee_window.show()
+        self.hide()
+
+    def logout_employee(self):
+        # Çalışan arayüzünü kapat ve giriş ekranını göster
+        if hasattr(self, 'employee_window'):
+            self.employee_window.close()
+        self.show()
 
     def reopen_dashboard(self):
         self.dashboard_window.show()
