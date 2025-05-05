@@ -6,7 +6,7 @@ import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from models.budget_manager import BudgetManager
-
+import models.tahmin as tahmin
 class DashboardUI(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
@@ -96,12 +96,12 @@ class DashboardUI(object):
         self.btn_home = self.create_menu_button("Ana Sayfa", "images/home.png")
         self.btn_employees = self.create_menu_button("Çalışanlar", "images/teamwork.png")
         self.btn_reports = self.create_menu_button("Raporlama", "images/growth.png")
-        
+        self.btn_tahmin = self.create_menu_button("Tahmin", "images/growth.png")####################
         # Butonları sidebar'a ekle
         self.sidebar_layout.addWidget(self.btn_home)
         self.sidebar_layout.addWidget(self.btn_employees)
         self.sidebar_layout.addWidget(self.btn_reports)
-        
+        self.sidebar_layout.addWidget(self.btn_tahmin)
         # Spacer ve çıkış butonu
         self.sidebar_layout.addItem(QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding))
         
@@ -369,6 +369,15 @@ class DashboardUI(object):
         self.raporlama_layout.setContentsMargins(30, 30, 30, 30)
         self.raporlama_layout.setSpacing(15)
 
+
+        #Tahmin Sayfası
+        self.tahmin_page = QtWidgets.QWidget()
+        self.tahmin_page.setObjectName("tahmin_page")
+        self.tahmin_layout = QtWidgets.QVBoxLayout(self.tahmin_page)
+        self.tahmin_layout.setContentsMargins(30, 30, 30, 30)
+
+        self.tahmin_widget = tahmin.TahminGrafikWidget()
+        self.tahmin_layout.addWidget(self.tahmin_widget)
         # Buton Layoutu
         self.button_layout = QtWidgets.QHBoxLayout()
         self.button_layout.setSpacing(15)
@@ -624,7 +633,7 @@ class DashboardUI(object):
         # Sayfaları stacked_widget'e ekle
         self.stacked_widget.addWidget(self.employees_page)
         self.stacked_widget.addWidget(self.raporlama_page)
-        
+        self.stacked_widget.addWidget(self.tahmin_page)
         # içerikleri ana içerik layouta ekle
         self.content_layout.addWidget(self.top_bar)
         self.content_layout.addWidget(self.stacked_widget)
@@ -638,7 +647,8 @@ class DashboardUI(object):
         self.btn_home.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.content_page))
         self.btn_employees.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.employees_page))
         self.btn_reports.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.raporlama_page))
-        
+        self.btn_tahmin.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.tahmin_page))
+
         self.button1.clicked.connect(self.birim_grafik_baslat)
         self.button2.clicked.connect(self.kalem_grafik_baslat)
         self.button3.clicked.connect(self.kisi_grafik_baslat)
@@ -648,6 +658,8 @@ class DashboardUI(object):
 
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
+
+    
 
     def grafik_kisi_sec(self):
         secim = self.kisi_combo.currentText()

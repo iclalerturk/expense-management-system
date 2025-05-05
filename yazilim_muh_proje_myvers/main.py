@@ -8,7 +8,7 @@ class giderApp(QtWidgets.QWidget, LoginUi):
     def __init__(self):
         super(giderApp, self).__init__()
         self.setupUi(self)
-        self.db = Database()  # veritabanı nesnesi
+        self.db = Database()  # veritabanı nesnesiz
         self.userMailText.returnPressed.connect(self.on_login_click)
         self.passwordText.returnPressed.connect(self.on_login_click)
         self.loginButton.clicked.connect(self.on_login_click)
