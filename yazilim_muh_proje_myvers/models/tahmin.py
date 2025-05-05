@@ -33,12 +33,16 @@ class TahminGrafikWidget(QtWidgets.QWidget):
             QPushButton:hover {
                 background-color: #2980b9;
             }                       
-                                  
-                                  ''')
+        ''')
         self.button.clicked.connect(self.grafik_olustur)
         kontrol_layout.addWidget(self.button)
 
         self.layout().addLayout(kontrol_layout)
+
+        # Tahmin etiketi
+        self.tahminLabel = QtWidgets.QLabel("Gelecek Ay Tahmini: -")
+        self.tahminLabel.setStyleSheet("font-weight: bold; font-size: 14px; padding: 6px; color: #2c3e50;")
+        self.layout().addWidget(self.tahminLabel)
 
         # Matplotlib çizimi için placeholder
         self.canvas = None
@@ -64,6 +68,13 @@ class TahminGrafikWidget(QtWidgets.QWidget):
 
         df["hareketli_ortalama"] = df["tutar"].rolling(window=n).mean()
 
+        # Gelecek ay tahmini
+        tahmin = df["hareketli_ortalama"].iloc[-1]
+        if pd.isna(tahmin):
+            self.tahminLabel.setText("Gelecek Ay Tahmini: Yetersiz veri")
+        else:
+            self.tahminLabel.setText(f"Gelecek Ay Tahmini: {tahmin:.2f} TL")
+
         # Önceki grafik varsa kaldır
         if self.canvas:
             self.layout().removeWidget(self.canvas)
@@ -85,3 +96,4 @@ class TahminGrafikWidget(QtWidgets.QWidget):
 
         self.layout().addWidget(self.canvas)
         self.canvas.draw()
+

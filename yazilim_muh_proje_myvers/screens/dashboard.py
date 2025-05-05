@@ -177,28 +177,23 @@ class DashboardUI(object):
         # Spacer
         self.top_bar_layout.addItem(QtWidgets.QSpacerItem(100, 60, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum))
         
-        # Arama kutusu -> silinebilir, şu an bir işleve sahip değil
-        self.search_edit = QtWidgets.QLineEdit()
-        self.search_edit.setPlaceholderText("Ara...")
-        self.search_edit.setMinimumWidth(250)
-        self.top_bar_layout.addWidget(self.search_edit)
         
         # kullanıcı profil butonu
-        self.btn_profile = QtWidgets.QPushButton()
-        self.btn_profile.setIcon(QtGui.QIcon("images/user.png"))
-        self.btn_profile.setIconSize(QtCore.QSize(30, 30))
-        self.btn_profile.setStyleSheet('''
-            QPushButton {
-                background-color: transparent;
-                color: #333;
-                border: none;
-                padding: 5px;
-            }
-            QPushButton:hover {
-                background-color: #f0f0f0;
-            }
-        ''')
-        self.top_bar_layout.addWidget(self.btn_profile)
+        # self.btn_profile = QtWidgets.QPushButton()
+        # self.btn_profile.setIcon(QtGui.QIcon("images/user.png"))
+        # self.btn_profile.setIconSize(QtCore.QSize(30, 30))
+        # self.btn_profile.setStyleSheet('''
+        #     QPushButton {
+        #         background-color: transparent;
+        #         color: #333;
+        #         border: none;
+        #         padding: 5px;
+        #     }
+        #     QPushButton:hover {
+        #         background-color: #f0f0f0;
+        #     }
+        # ''')
+        # self.top_bar_layout.addWidget(self.btn_profile)
         
         # ana içerik sayfası
         self.content_page = QtWidgets.QWidget()
