@@ -96,7 +96,7 @@ class DashboardUI(object):
         self.btn_home = self.create_menu_button("Ana Sayfa", "images/home.png")
         self.btn_employees = self.create_menu_button("Çalışanlar", "images/teamwork.png")
         self.btn_reports = self.create_menu_button("Raporlama", "images/growth.png")
-        self.btn_tahmin = self.create_menu_button("Tahmin", "images/growth.png")####################
+        self.btn_tahmin = self.create_menu_button("Tahmin", "images/tahmin.png")####################
         # Butonları sidebar'a ekle
         self.sidebar_layout.addWidget(self.btn_home)
         self.sidebar_layout.addWidget(self.btn_employees)
