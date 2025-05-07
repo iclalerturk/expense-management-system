@@ -7,6 +7,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from models.budget_manager import BudgetManager
 import models.tahmin as tahmin
+import re
 class DashboardUI(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
@@ -731,7 +732,7 @@ class DashboardUI(object):
             print("Hiç harcama verisi bulunamadı!")
             sizes = [1, 1]  # Görsel olarak eşit göstermek için
         
-        colors = ['#3498db', '#e74c3c']
+        colors = ['#a5c90f', '#d1003b']
         explode = (0.1, 0)  # Seçilen birimi vurgulamak için
         
         self.ax2.pie(sizes, explode=explode, labels=labels, colors=colors,
@@ -805,7 +806,6 @@ class DashboardUI(object):
         print(f"Seçilen kalem ({secilen_kalem}) harcaması: {secilen_kalem_harcama}")
         print(f"Diğer kalemler toplam harcaması: {diger_kalemler_harcama}")
         
-        # Pie chart'ı temizle ve yeniden çiz
         self.ax2.clear()
         
         # Kalem adının sadece isim kısmını kullan (ID'yi çıkar)
@@ -817,9 +817,9 @@ class DashboardUI(object):
         # Eğer herhangi bir harcama yoksa, varsayılan değerler kullan
         if secilen_kalem_harcama == 0 and diger_kalemler_harcama == 0:
             print("Hiç harcama verisi bulunamadı!")
-            sizes = [1, 1]  # Görsel olarak eşit göstermek için
+            sizes = [1, 1]
         
-        colors = ['#2ecc71', '#e74c3c']
+        colors = ['#c2a3fd', '#e13661']
         explode = (0.1, 0)
         
         self.ax2.pie(sizes, explode=explode, labels=labels, colors=colors,
@@ -891,7 +891,7 @@ class DashboardUI(object):
             
             sizes = [secilen_kisi_harcama, diger_kisiler_harcama]
             labels = [secilen_kisi_adi, 'Diğer Kişiler']
-            colors = ['#2ecc71', '#e74c3c']
+            colors = ['#9614d0', '#f7f93c']
             explode = (0.1, 0)  # Seçilen kişiyi vurgulamak için
 
             self.ax2.pie(sizes, explode=explode, labels=labels, colors=colors,
@@ -1054,29 +1054,27 @@ class DashboardUI(object):
         return button
 
     def create_summary_card(self, title, value, icon_path, color):
+        safe_title = re.sub(r'[^a-zA-Z0-9_]', '_', title.lower())
+        
         card = QtWidgets.QWidget()
-        card.setObjectName(f"card_{title.lower().replace(' ', '_')}")
-        card.setStyleSheet(f'''
-            #{card.objectName()} {{
-                background-color: white;
-                border-radius: 10px;
-                border: 1px solid #ddd;
-            }}
-            QLabel[objectName^="card_value"] {{
-                font-size: 28px;
-                font-weight: bold;
-                color: {color};
-            }}
-            QLabel[objectName^="card_title"] {{
-                font-size: 14px;
-                color: #666;
-            }}
-        ''')
+        card.setObjectName(f"card_{safe_title}")
+        
+        # Apply stylesheet without using objectName in selectors
+        general_style = f'''
+            background-color: white;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+        '''
+        card.setStyleSheet(general_style)
+        
+        # Set minimum height
         card.setMinimumHeight(120)
         
+        # Create layout
         layout = QtWidgets.QHBoxLayout(card)
         layout.setContentsMargins(20, 20, 20, 20)
         
+        # Create and style icon
         icon_label = QtWidgets.QLabel()
         icon_label.setMaximumSize(QtCore.QSize(48, 48))
         icon_label.setMinimumSize(QtCore.QSize(48, 48))
@@ -1088,16 +1086,27 @@ class DashboardUI(object):
             padding: 10px;
         ''')
         
+        # Create and style value label
         value_label = QtWidgets.QLabel(value)
-        value_label.setObjectName(f"card_value_{title.lower().replace(' ', '_')}")
+        value_label.setStyleSheet(f'''
+            font-size: 28px;
+            font-weight: bold;
+            color: {color};
+        ''')
         
+        # Create and style title label
         title_label = QtWidgets.QLabel(title)
-        title_label.setObjectName(f"card_title_{title.lower().replace(' ', '_')}")
+        title_label.setStyleSheet('''
+            font-size: 14px;
+            color: #666;
+        ''')
         
+        # Create text layout and add labels
         text_layout = QtWidgets.QVBoxLayout()
         text_layout.addWidget(value_label)
         text_layout.addWidget(title_label)
         
+        # Add everything to main layout
         layout.addWidget(icon_label)
         layout.addSpacing(15)
         layout.addLayout(text_layout)

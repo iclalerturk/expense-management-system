@@ -318,7 +318,7 @@ class EmployeeDashboardUI(object):
                     
                     # Kalem ID'sini bulmak için veritabanına sorgu yap
                     db.cursor.execute("SELECT kalemId FROM harcamakalemi WHERE kalemAd = ?", 
-                                     (item['Kalem Adı'],))
+                                    (item['Kalem Adı'],))
                     kalem_id = db.cursor.fetchone()
                     kalem_id = kalem_id[0] if kalem_id else "-"
                     
