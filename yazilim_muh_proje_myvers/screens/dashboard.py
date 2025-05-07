@@ -732,7 +732,7 @@ class DashboardUI(object):
             print("Hiç harcama verisi bulunamadı!")
             sizes = [1, 1]  # Görsel olarak eşit göstermek için
         
-        colors = ['#a5c90f', '#d1003b']
+        colors = ['#c2a3fd', '#e13661']
         explode = (0.1, 0)  # Seçilen birimi vurgulamak için
         
         self.ax2.pie(sizes, explode=explode, labels=labels, colors=colors,
@@ -891,7 +891,7 @@ class DashboardUI(object):
             
             sizes = [secilen_kisi_harcama, diger_kisiler_harcama]
             labels = [secilen_kisi_adi, 'Diğer Kişiler']
-            colors = ['#9614d0', '#f7f93c']
+            colors = ['#c2a3fd', '#e13661']
             explode = (0.1, 0)  # Seçilen kişiyi vurgulamak için
 
             self.ax2.pie(sizes, explode=explode, labels=labels, colors=colors,
