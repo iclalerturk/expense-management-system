@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from screens.dashboard import DashboardUI
 from models.database import Database
 
-class TestYonetimDashboard(unittest.TestCase):
+class TestEditBudget(unittest.TestCase):
     def setUp(self):
         self.app = QApplication.instance() or QApplication(sys.argv)
         self.form = QWidget()
