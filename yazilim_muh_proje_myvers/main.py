@@ -23,7 +23,7 @@ class giderApp(QtWidgets.QWidget, LoginUi):
             if user["user_type"] == "ustyonetici":
                 self.open_dashboard(user) #bu üst yönetim için kullanılan bir metod
             elif user["user_type"] == "yonetici":
-                QtWidgets.QMessageBox.information(self, "Bilgi", "Yönetici paneli henüz hazır değil.")
+                self.open_yonetici_panel(user) # yönetici paneli
             elif user["user_type"] == "calisan":
                 self.open_employee_dashboard(user)  # Çalışan panelini aç
             elif user["user_type"] == "muhasebe":
@@ -66,6 +66,19 @@ class giderApp(QtWidgets.QWidget, LoginUi):
         self.dashboard_window.show()
         self.hide()
 
+    def open_yonetici_panel(self, user):
+        from screens.yönetici_panel import YoneticiPanelUI
+        self.yonetici_window = QtWidgets.QMainWindow()
+        self.yonetici_ui = YoneticiPanelUI()
+        self.yonetici_ui.parent_window = self.yonetici_window  
+        self.yonetici_ui.login_window = self  
+        self.yonetici_ui.setupUi(self.yonetici_window, user["birimId"])
+        self.yonetici_window.show()
+        self.hide()
+
+    def show_login_again(self):
+        self.show()
+        
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     Form = giderApp()
