@@ -453,3 +453,136 @@ class Database:
         finally:
             if connection:
                 connection.close()
+
+
+    # Yönetici - harcama onay ekranında kullanılan :
+    # 1
+    
+    def get_harcamalar_by_birim(self, birim_id, status_filter="Tümü"):
+        cursor = self.conn.cursor()
+
+        query = """
+            SELECT 
+                h.harcamaId, 
+                c.isim || ' ' || c.soyisim AS adSoyad,
+                hk.kalemAd,
+                h.tutar,
+                h.tazminTutari,
+                hk.aciklama,
+                h.onayDurumu,
+                h.tarih,
+                h.kalemId
+            FROM harcama h
+            JOIN calisan c ON h.calisanId = c.calisanId
+            JOIN harcamakalemi hk ON h.kalemId = hk.kalemId
+            WHERE h.birimId = ?
+        """
+        params = [birim_id]
+
+        if status_filter != "Tümü":
+            query += " AND h.onayDurumu = ?"
+            params.append(status_filter)
+
+        cursor.execute(query, params)
+        harcamalar = cursor.fetchall()
+
+        result = []
+
+        for harcama in harcamalar:
+            (
+                harcamaId, adSoyad, kalemAd, tutar, tazmin, aciklama,
+                onayDurumu, tarih, kalemId
+            ) = harcama
+
+            # Null check
+            tutar = float(tutar) if tutar is not None else 0.0
+            tazmin = float(tazmin) if tazmin is not None else 0.0
+            
+
+            # Get current used + limit + aşım oranı
+            cursor.execute("""
+                SELECT 
+                    IFNULL(SUM(tazminTutari), 0)
+                FROM harcama
+                WHERE birimId = ? AND kalemId = ? AND onayDurumu = 'Onaylandi'
+            """, (birim_id, kalemId))
+            used = cursor.fetchone()[0]
+            used = float(used) if used is not None else 0.0
+
+            cursor.execute("""
+                SELECT 
+                    bkb.limitButce, bkb.asimOrani
+                FROM birim_kalem_butcesi bkb
+                WHERE bkb.birimId = ? AND bkb.kalemId = ?
+            """, (birim_id, kalemId))
+            butce_row = cursor.fetchone()
+
+            if butce_row:
+                limit, asim_orani = butce_row
+                limit = limit or 0
+                asim_orani = asim_orani or 0
+            else:
+                limit, asim_orani = 0, 0
+
+            current_total = used + tazmin
+
+            # Determine if limit was exceeded
+            limit_asildi_once = used > limit
+            limit_asiliyor_simdi = current_total > (limit + (limit * asim_orani / 100))
+            limit_asim_miktari = max(0, current_total - (limit + (limit * asim_orani / 100)))
+            limit_asim_miktari = limit_asim_miktari or 0
+
+            result.append((
+                harcamaId,
+                adSoyad,
+                kalemAd,
+                tutar,
+                tazmin,
+                aciklama,
+                onayDurumu,
+                tarih,
+                "Evet" if limit_asildi_once else "Hayır",
+                "Evet" if limit_asiliyor_simdi else "Hayır",
+                f"{limit_asim_miktari:.2f} ₺" if limit_asim_miktari > 0 else "-",
+                None
+            ))
+
+        return result
+
+
+        
+    # 2
+    def update_harcama_status(self, harcama_id, new_status):
+        cursor = self.conn.cursor()
+        cursor.execute("UPDATE harcama SET onayDurumu=? WHERE harcamaId=?", (new_status, harcama_id))
+        self.conn.commit()
+
+    # 3
+    def get_status_counts(self, birim_id):
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            SELECT onayDurumu, COUNT(*) FROM harcama
+            WHERE birimId = ?
+            GROUP BY onayDurumu
+        """, (birim_id,))
+        result = cursor.fetchall()
+        return {status: count for status, count in result}
+    
+    # 4
+    def get_birim_adi(self, birim_id):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT birimIsmi FROM birim WHERE birimId = ?", (birim_id,))
+        row = cursor.fetchone()
+        return row[0] if row else "Birim Adı Yok"
+    
+    # 5
+    def get_yonetici_adi(self, birim_id):
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            SELECT y.isim || ' ' || y.soyisim
+            FROM yonetici y
+            JOIN birim b ON y.yoneticiId = b.yoneticiId
+            WHERE b.birimId = ?
+        """, (birim_id,))
+        row = cursor.fetchone()
+        return row[0] if row else "Yönetici"
