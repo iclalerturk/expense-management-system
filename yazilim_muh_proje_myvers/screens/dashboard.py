@@ -11,7 +11,7 @@ import re
 class DashboardUI(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(1100, 700)
+        Form.resize(1300, 800)
         Form.setStyleSheet('''
             QWidget {
                 font-family: 'Segoe UI', Arial;

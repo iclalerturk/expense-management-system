@@ -5,7 +5,7 @@ from models.database import Database
 class EmployeeDashboardUI(object):
     def setupUi(self, Form):
         Form.setObjectName("EmployeeDashboard")
-        Form.resize(1100, 700)
+        Form.resize(1300, 800)
         Form.setStyleSheet('''
             QWidget {
                 font-family: 'Segoe UI', Arial;

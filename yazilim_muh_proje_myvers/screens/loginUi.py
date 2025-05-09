@@ -3,7 +3,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class LoginUi(object):
         def setupUi(self, Form):
                 Form.setObjectName("ÇalışanGirişi")
-                Form.resize(1100, 700)
+                Form.resize(1300, 800)
                 Form.setMinimumSize(900, 650)
                 Form.setWindowTitle("Kurumsal Yönetim Sistemi")
                 

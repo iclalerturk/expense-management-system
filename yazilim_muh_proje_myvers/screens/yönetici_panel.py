@@ -14,7 +14,10 @@ class YoneticiPanelUI(QMainWindow):
     def setupUi(self, MainWindow, birim_id):
         self.birim_id = birim_id
         MainWindow.setWindowTitle("Yönetici Paneli - Harcama Onay Paneli")
-        MainWindow.setGeometry(100, 100, 1200, 700)
+        screen_geometry = MainWindow.screen().availableGeometry()
+        x = (screen_geometry.width() - 1300) // 2
+        y = (screen_geometry.height() - 800) // 2
+        MainWindow.setGeometry(x, y, 1300, 800)  # (x, y, width, height)
         MainWindow.setStyleSheet("background-color: #E3E4E0;")
 
         self.central_widget = QWidget()
