@@ -155,8 +155,8 @@ class YoneticiPanelUI(QMainWindow):
         self.table = QTableWidget()
         self.table.setColumnCount(12)
         self.table.setHorizontalHeaderLabels([
-            "ID", "Ad Soyad", "Kalem", "Tutar", "Tazmin", "Açıklama", 
-            "Durum", "Tarih", "Limit Aşıldı (Önce)", "Aşım Durumu (Şimdi)", "Aşım Miktarı", "İşlem"
+            "ID", "Ad Soyad", "Kalem", "Tutar", "Tazmin", "Açıklama", "Durum", "Tarih",
+            "Limit Aşıldı mı", "Şuan Aşım Var mı", "Aşım Miktarı"
         ])
      
         header = self.table.horizontalHeader()
