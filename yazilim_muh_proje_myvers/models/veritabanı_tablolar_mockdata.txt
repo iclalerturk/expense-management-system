@@ -131,6 +131,8 @@ INSERT INTO birim_kalem_butcesi (birimId, kalemId, limitButce, asimOrani) VALUES
 (2, 3, 2000.00, 20),  -- Pazarlama birimi için Benzin kalemi
 (3, 4, 1500.00, 10);  -- Ar-Ge birimi için Ofis Malzemesi kalemi
 
+
+
 INSERT INTO harcama (harcamaId, calisanId, kalemId, birimId, tutar, tazminTutari, onayDurumu, tarih, belgeYolu) VALUES
 (1, 1, 1, 1, 150.00, 150.00, 'Onaylandi', '2025-04-20', 'belgeler/taksi1.pdf'),
 (2, 2, 2, 1, 50.00, 50.00, 'Beklemede', '2025-04-21', 'belgeler/otopark1.pdf'),

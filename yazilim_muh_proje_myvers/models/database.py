@@ -12,6 +12,52 @@ class Database:
         self.conn.row_factory = sqlite3.Row
         self.cursor = self.conn.cursor()
 
+    def get_approved_expenses(self):
+        query = """
+        SELECT 
+            h.harcamaId,
+            c.isim || ' ' || c.soyisim AS calisan_adi,
+            b.birimIsmi,
+            k.kalemAd,
+            h.tutar,
+            h.tarih,
+            h.onayDurumu,
+            bkb.maxKisiLimit
+        FROM harcama h
+        JOIN calisan c ON h.calisanId = c.calisanId
+        JOIN birim b ON h.birimId = b.birimId
+        JOIN harcamakalemi k ON h.kalemId = k.rowid
+        LEFT JOIN birim_kalem_butcesi bkb ON b.birimId = bkb.birimId AND k.kalemId = bkb.kalemId
+        WHERE h.onayDurumu = 'Onaylandi'
+        """
+        self.cursor.execute(query)
+        results = self.cursor.fetchall()
+        return results
+
+    
+    def get_expense_details_by_id_muhasebe(self, harcama_id):
+        query = """
+            SELECT 
+                h.harcamaId,
+                c.isim || ' ' || c.soyisim AS calisan_adi,
+                b.birimIsmi,
+                k.kalemAd,
+                h.tutar,
+                IFNULL(bk.limitButce - h.tutar, 0) AS kalanButce,
+                'Limit: ' || IFNULL(bk.limitButce, 'N/A') || ', Aşım Oranı: ' || IFNULL(bk.asimOrani, 'N/A') || '%' AS esikBilgisi,
+                bk.maxKisiLimit
+            FROM harcama h
+            JOIN calisan c ON h.calisanId = c.calisanId
+            JOIN birim b ON h.birimId = b.birimId
+            JOIN harcamakalemi k ON h.kalemId = k.rowid
+            LEFT JOIN birim_kalem_butcesi bk ON h.birimId = bk.birimId AND h.kalemId = bk.kalemId
+            WHERE h.harcamaId = ?
+        """
+        self.cursor.execute(query, (harcama_id,))
+        result = self.cursor.fetchone()
+        return result
+
+
     def grafik_verisi_getir(self, kategori, secilen_id=None):
         query_map = {
             'birim': """
@@ -457,7 +503,27 @@ class Database:
 
     # Yönetici - harcama onay ekranında kullanılan :
     # 1
-    
+    # def add_max_kisi_limit(self):
+    #     # maxKisiLimit sütunu zaten varsa hata vermemesi için try-except
+    #     connection = sqlite3.connect(self.db_path)
+    #     cursor = connection.cursor()
+    #     try:
+    #         cursor.execute("""
+    #         UPDATE birim_kalem_butcesi
+    #         SET maxKisiLimit = 500.0
+    #         WHERE maxKisiLimit IS NULL
+    #     """)
+    #         print("maxKisiLimit degerler eklendi.")
+    #     except sqlite3.OperationalError as e:
+    #         print("hata:", e)
+
+    #     connection.commit()
+    #     # cursor.execute("SELECT * FROM birim_kalem_butcesi")
+    #     # rows = cursor.fetchall()
+    #     # for row in rows:
+    #     #     print(dict(row))
+    #     # Tüm satırlara başlangıç değeri olarak 500.0 atanıyor
+
     def get_harcamalar_by_birim(self, birim_id, status_filter="Tümü"):
         cursor = self.conn.cursor()
 
