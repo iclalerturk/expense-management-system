@@ -523,6 +523,14 @@ class MuhasebeDashboardUI(object):
             QtWidgets.QMessageBox.warning(None, "Uyarı", "Lütfen reddetmek için bir satır seçin.")
             return
 
+        cevap = QtWidgets.QMessageBox.question(
+            None, "Onay", "Seçilen harcama tamamen silinecek. Emin misiniz?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+        )
+
+        if cevap == QtWidgets.QMessageBox.No:
+            return
+
         # Harcama ID'sini al
         harcama_id = int(self.pending_requests_table.item(selected_row, 0).text())
 
