@@ -57,7 +57,7 @@ CREATE TABLE birim_kalem_butcesi(
     FOREIGN KEY (kalemId) REFERENCES harcamakalemi(kalemId),
     PRIMARY KEY (birimId, kalemId)
 );
-
+//maxKisiLimit sutunu eklendi
 CREATE TABLE harcama(
     harcamaId INTEGER NOT NULL PRIMARY KEY,
     calisanId INTEGER,
@@ -130,7 +130,7 @@ INSERT INTO birim_kalem_butcesi (birimId, kalemId, limitButce, asimOrani) VALUES
 (1, 2, 500.00, 15),   -- Satış birimi için Otopark kalemi
 (2, 3, 2000.00, 20),  -- Pazarlama birimi için Benzin kalemi
 (3, 4, 1500.00, 10);  -- Ar-Ge birimi için Ofis Malzemesi kalemi
-
+//maxKisiLimit sutunu eklendi
 
 
 INSERT INTO harcama (harcamaId, calisanId, kalemId, birimId, tutar, tazminTutari, onayDurumu, tarih, belgeYolu) VALUES
