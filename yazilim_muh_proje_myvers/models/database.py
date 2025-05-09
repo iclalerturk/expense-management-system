@@ -28,7 +28,8 @@ class Database:
         JOIN birim b ON h.birimId = b.birimId
         JOIN harcamakalemi k ON h.kalemId = k.rowid
         LEFT JOIN birim_kalem_butcesi bkb ON b.birimId = bkb.birimId AND k.kalemId = bkb.kalemId
-        WHERE h.onayDurumu = 'Onaylandi'
+        WHERE h.onayDurumu = 'Onaylandi' and (h.tazminTutari = 0 or h.tazminTutari is NULL)
+        ORDER BY h.tarih DESC
         """
         self.cursor.execute(query)
         results = self.cursor.fetchall()
@@ -57,6 +58,10 @@ class Database:
         result = self.cursor.fetchone()
         return result
 
+    def get_harcama_kalemleri_items(self):
+        query = "SELECT kalemAd FROM harcamakalemi"
+        self.cursor.execute(query)
+        return [row[0] for row in self.cursor.fetchall()]
 
     def grafik_verisi_getir(self, kategori, secilen_id=None):
         query_map = {
@@ -509,9 +514,8 @@ class Database:
     #     cursor = connection.cursor()
     #     try:
     #         cursor.execute("""
-    #         UPDATE birim_kalem_butcesi
-    #         SET maxKisiLimit = 500.0
-    #         WHERE maxKisiLimit IS NULL
+    #         UPDATE harcama
+    #         SET tazminTutari = 0
     #     """)
     #         print("maxKisiLimit degerler eklendi.")
     #     except sqlite3.OperationalError as e:
@@ -523,6 +527,10 @@ class Database:
     #     # for row in rows:
     #     #     print(dict(row))
     #     # Tüm satırlara başlangıç değeri olarak 500.0 atanıyor
+
+    def reject_expense_request(self, expense_id):
+        self.cursor.execute("DELETE FROM harcama WHERE harcamaId = ?", (expense_id,))
+        self.conn.commit()
 
     def get_harcamalar_by_birim(self, birim_id, status_filter="Tümü"):
         cursor = self.conn.cursor()

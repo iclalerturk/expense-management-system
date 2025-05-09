@@ -194,10 +194,10 @@ class MuhasebeDashboardUI(object):
         # Override expense item
         self.kalem_override_group = QtWidgets.QGroupBox("Harcama Kalemi Değiştir")
         self.kalem_override_layout = QtWidgets.QHBoxLayout(self.kalem_override_group)
-        
         self.kalem_combobox = QtWidgets.QComboBox()
         self.kalem_override_layout.addWidget(self.kalem_combobox)
-        
+        self.harcama_kalemlerini_getir()
+ 
         self.apply_kalem_button = QtWidgets.QPushButton("Uygula")
         self.apply_kalem_button.setStyleSheet('''
             QPushButton {
@@ -208,7 +208,8 @@ class MuhasebeDashboardUI(object):
             }
         ''')
         self.kalem_override_layout.addWidget(self.apply_kalem_button)
-        
+        self.apply_kalem_button.clicked.connect(self.apply_kalem_button_clicked)
+
         self.actions_layout.addWidget(self.kalem_override_group)
 
         # Reimburse amount
@@ -253,7 +254,7 @@ class MuhasebeDashboardUI(object):
                 background-color: #27ae60;
             }
         ''')
-        
+        self.approve_button.clicked.connect(self.on_approve_button_clicked)
         self.reject_button = QtWidgets.QPushButton("Reddet")
         self.reject_button.setStyleSheet('''
             QPushButton {
@@ -267,7 +268,7 @@ class MuhasebeDashboardUI(object):
         
         self.buttons_layout.addWidget(self.approve_button)
         self.buttons_layout.addWidget(self.reject_button)
-        
+        self.reject_button.clicked.connect(self.on_reject_button_clicked)
         self.actions_layout.addLayout(self.buttons_layout)
         
         self.request_actions_layout.addWidget(self.details_panel, 1)
@@ -372,16 +373,17 @@ class MuhasebeDashboardUI(object):
         QtCore.QMetaObject.connectSlotsByName(Form)
 
 
+  
+
     def on_table_row_clicked(self):
-        db= Database()
+        db = Database()
         selected_row = self.pending_requests_table.currentRow()
         if selected_row < 0:
             return
 
-        harcama_id = int(self.pending_requests_table.item(selected_row, 0).text())  # ID sütunu
-
-        # Veritabanından bilgileri çek
+        harcama_id = int(self.pending_requests_table.item(selected_row, 0).text())
         detaylar = db.get_expense_details_by_id_muhasebe(harcama_id)
+
         if detaylar:
             self.detail_request_id.setText(str(detaylar[0]))
             self.detail_employee.setText(detaylar[1])
@@ -391,7 +393,40 @@ class MuhasebeDashboardUI(object):
             self.detail_budget_remaining.setText(f"{detaylar[5]:.2f} ₺")
             self.detail_threshold_info.setText(detaylar[6])
             self.detail_karsilanabilecek_tutar_info.setText(f"{detaylar[7]:.2f} ₺")
+            self.kalem_combobox.setCurrentText(detaylar[3])
 
+            # Tazmin kontrolü
+            talep_tutar = detaylar[4]
+            karsilanabilecek_tutar = detaylar[7]
+            esik_orani_str = detaylar[6].split("Aşım Oranı: ")[-1].replace("%", "")
+            try:
+                esik_orani = float(esik_orani_str)
+            except:
+                esik_orani = 0
+
+            esik_miktar = (esik_orani / 100) * karsilanabilecek_tutar
+            maksimum_tutar = karsilanabilecek_tutar + esik_miktar
+
+            if talep_tutar > maksimum_tutar:
+                # Tam tazmin mümkün değil
+                self.reimburse_full_radio.setEnabled(False)
+                self.reimburse_partial_radio.setChecked(True)
+                self.reimburse_amount.setEnabled(True)
+                self.reimburse_amount.setMaximum(maksimum_tutar)
+                self.reimburse_amount.setValue(maksimum_tutar)
+            else:
+                self.reimburse_full_radio.setEnabled(True)
+                self.reimburse_full_radio.setChecked(True)
+                self.reimburse_partial_radio.setChecked(False)
+                self.reimburse_amount.setEnabled(False)
+                self.reimburse_amount.setValue(talep_tutar)
+
+
+    def harcama_kalemlerini_getir(self):
+        db = Database()
+        kalem_listesi = db.get_harcama_kalemleri_items()
+        self.kalem_combobox.clear()
+        self.kalem_combobox.addItems(kalem_listesi)
 
     def load_approved_expenses_to_table(self):
         db = Database()
@@ -402,6 +437,7 @@ class MuhasebeDashboardUI(object):
             for col_index, col_data in enumerate(row_data):
                 item = QtWidgets.QTableWidgetItem(str(col_data))
                 self.pending_requests_table.setItem(row_index, col_index, item)
+
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("AccountingDashboard", "Muhasebe Paneli"))
@@ -420,3 +456,82 @@ class MuhasebeDashboardUI(object):
         elif page == self.all_requests_page:
             self.load_all_requests()
         """
+
+    def apply_kalem_button_clicked(self):
+        selected_row = self.pending_requests_table.currentRow()
+        if selected_row < 0:
+            return
+
+        harcama_id_item = self.pending_requests_table.item(selected_row, 0)
+        if not harcama_id_item:
+            return
+
+        harcama_id = int(harcama_id_item.text())
+        yeni_kalem_ad = self.kalem_combobox.currentText()
+
+        db = Database()
+        # Kalem adına göre kalem ID'si al
+        db.cursor.execute("SELECT rowid FROM harcamakalemi WHERE kalemAd = ?", (yeni_kalem_ad,))
+        result = db.cursor.fetchone()
+        if not result:
+            return
+        yeni_kalem_id = result[0]
+
+        # Veritabanında güncelle
+        db.cursor.execute("UPDATE harcama SET kalemId = ? WHERE harcamaId = ?", (yeni_kalem_id, harcama_id))
+        db.conn.commit()
+
+        # Detayları güncelle
+        detaylar = db.get_expense_details_by_id_muhasebe(harcama_id)
+        if detaylar:
+            self.detail_request_id.setText(str(detaylar[0]))
+            self.detail_employee.setText(detaylar[1])
+            self.detail_department.setText(detaylar[2])
+            self.detail_expense_item.setText(detaylar[3])
+            self.detail_amount.setText(f"{detaylar[4]:.2f} ₺")
+            self.detail_budget_remaining.setText(f"{detaylar[5]:.2f} ₺")
+            self.detail_threshold_info.setText(detaylar[6])
+            self.detail_karsilanabilecek_tutar_info.setText(f"{detaylar[7]:.2f} ₺")
+            self.kalem_combobox.setCurrentText(detaylar[3])
+
+        # Tabloları güncelle
+        self.load_approved_expenses_to_table()
+
+    def on_approve_button_clicked(self):
+        selected_row = self.pending_requests_table.currentRow()
+        if selected_row < 0:
+            return
+
+        harcama_id = int(self.pending_requests_table.item(selected_row, 0).text())
+
+        if self.reimburse_full_radio.isChecked():
+            tazmin_miktar = float(self.detail_amount.text().replace("₺", "").strip())
+        else:
+            tazmin_miktar = self.reimburse_amount.value()
+
+        db = Database()
+        db.cursor.execute("UPDATE harcama SET onayDurumu = 'Onaylandi', tazminTutari = ? WHERE harcamaId = ?", 
+                        (tazmin_miktar, harcama_id))
+        db.conn.commit()
+
+        QtWidgets.QMessageBox.information(None, "Onaylandi", f"{tazmin_miktar:.2f} ₺ tutarındaki harcama onaylandı.")
+        self.load_approved_expenses_to_table()
+
+    def on_reject_button_clicked(self):
+        selected_row = self.pending_requests_table.currentRow()
+        if selected_row < 0:
+            QtWidgets.QMessageBox.warning(None, "Uyarı", "Lütfen reddetmek için bir satır seçin.")
+            return
+
+        # Harcama ID'sini al
+        harcama_id = int(self.pending_requests_table.item(selected_row, 0).text())
+
+        # # Veritabanını güncelle
+        db = Database()
+        db.reject_expense_request(harcama_id)
+
+        # Bildirim göster
+        QtWidgets.QMessageBox.information(None, "Reddedildi", "Harcama talebi başarıyla reddedildi.")
+
+        # Tabloları güncelle
+        self.load_approved_expenses_to_table()
