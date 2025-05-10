@@ -215,7 +215,7 @@ class YoneticiPanelUI(QMainWindow):
         self.table.setColumnCount(12)
         self.table.setHorizontalHeaderLabels([
             "ID", "Ad Soyad", "Kalem", "Tutar", "Tazmin", "Açıklama", "Durum", "Tarih",
-            "Limit Aşıldı mı", "Şuan Aşım Var mı", "Aşım Miktarı"
+            "Limit Aşıldı mı", "Şuan Aşım Var mı", "Aşım Miktarı","İşlem"
         ])
 
         for row_idx, row in enumerate(rows):
