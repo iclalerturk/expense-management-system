@@ -125,9 +125,14 @@ class YoneticiPanelUI(QMainWindow):
         # Yönetici bilgileri (üstte gösterilir)
         self.user_info_layout = QHBoxLayout()
 
-        manager_name = self.db.get_yonetici_adi(self.birim_id)  # You need to implement this
+        yonetici = self.db.get_yonetici_by_birim_id(self.birim_id)
         birim_name = self.db.get_birim_adi(self.birim_id)
-        welcome_label = QLabel(f"Yönetici Paneli\n\nHoş Geldiniz,\n{manager_name} !\n")
+        
+        if yonetici:
+            welcome_label = QLabel(f"Yönetici Paneli\n\nHoş Geldiniz,\n{yonetici.get_full_name()} !\n")
+        else:
+            welcome_label = QLabel("Yönetici bilgisi bulunamadı.")
+
         welcome_label.setStyleSheet("font-size:25px; font-weight: bold; color: #333;")
 
         self.user_info_layout.addWidget(welcome_label)
