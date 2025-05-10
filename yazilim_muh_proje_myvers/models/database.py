@@ -3,6 +3,8 @@ import os
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from collections import defaultdict
+from models.yonetici import Yonetici
+
 class Database:
     def __init__(self, db_path=None):
         if db_path is None:
@@ -650,13 +652,15 @@ class Database:
         return row[0] if row else "Birim Adı Yok"
     
     # 5
-    def get_yonetici_adi(self, birim_id):
+    def get_yonetici_by_birim_id(self, birim_id):
         cursor = self.conn.cursor()
         cursor.execute("""
-            SELECT y.isim || ' ' || y.soyisim
-            FROM yonetici y
-            JOIN birim b ON y.yoneticiId = b.yoneticiId
-            WHERE b.birimId = ?
+            SELECT yoneticiId, isim, soyisim, email, sifre, birimId
+            FROM yonetici
+            WHERE birimId = ?
         """, (birim_id,))
         row = cursor.fetchone()
-        return row[0] if row else "Yönetici"
+    
+        if row:
+            return Yonetici(*row)
+        return None
