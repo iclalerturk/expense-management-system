@@ -519,8 +519,10 @@ class MuhasebeDashboardUI(object):
         birim_id, kalem_id = result
 
         # Birimin toplam bütçesini ve aşım flag'ini al
-        db.cursor.execute("SELECT totalButce, butceAsildi FROM birim WHERE birimId = ?", (birim_id,))
-        total_butce, butce_asildi = db.cursor.fetchone()
+        db.cursor.execute("SELECT limitButce FROM birim_kalem_butcesi WHERE birimId = ?", (birim_id,))
+        total_butce = db.cursor.fetchone()[0] or 0
+        db.cursor.execute("SELECT butceAsildi FROM birim WHERE birimId = ?", (birim_id,))
+        butce_asildi = db.cursor.fetchone()
 
         # Mevcut toplam harcamayı hesapla
         db.cursor.execute("""
