@@ -205,13 +205,25 @@ class LoginUi(object):
                 self.loginButton.setText("GİRİŞ YAP")
                 self.loginButton.setMinimumHeight(50)
                 self.loginButton.setMaximumHeight(50)
-                self.loginButton.setStyleSheet("font-family: 'Segoe UI', sans-serif;\n"
-                                        "font-size: 14px;\n"
-                                        "font-weight: bold;\n"
-                                        "color: white;\n"
-                                        "background-color: #080121;\n"
-                                        "border-radius: 8px;\n"
-                                        "border: none;\n")
+                self.loginButton.setStyleSheet("""
+                QPushButton {
+                        font-family: 'Segoe UI', sans-serif;
+                        font-size: 14px;
+                        font-weight: bold;
+                        color: white;
+                        background-color: #080121;
+                        border-radius: 8px;
+                        border: none;
+                        }
+                        QPushButton:hover {
+                        background-color: #1E2D7D;
+                        }
+                        QPushButton:pressed {
+                        background-color: #0F172A;
+                }
+                """)
+                self.loginButton.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+                
                 # Buton için gölge efekti
                 button_shadow = QtWidgets.QGraphicsDropShadowEffect()
                 button_shadow.setBlurRadius(15)
@@ -220,6 +232,16 @@ class LoginUi(object):
                 self.loginButton.setGraphicsEffect(button_shadow)
                 
                 self.formLayout.addWidget(self.loginButton)
+                
+                self.footerText = QtWidgets.QLabel()
+                self.footerText.setText("StarTech <a href='#' style='color: #1E40AF; text-decoration: none;'>@2025")
+                self.footerText.setOpenExternalLinks(True)
+                self.footerText.setStyleSheet("font-family: 'Segoe UI', sans-serif;\n"
+                                        "font-size: 12px;\n"
+                                        "color: #64748B;\n"
+                                        "margin-top: 15px;\n")
+                self.footerText.setAlignment(QtCore.Qt.AlignCenter)
+                self.formLayout.addWidget(self.footerText)
                 
                 # Form widget'ını sağ panele ekleme
                 self.rightLayout.addWidget(self.formWidget)
@@ -236,3 +258,4 @@ class LoginUi(object):
 
         def on_resize_event(self, event):
                 QtWidgets.QWidget.resizeEvent(self.containerWidget, event) #pencerenin yeniden boyutlandırılması işlemi
+        
