@@ -1,7 +1,9 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QTableWidgetItem
 from models.database import Database
-
+from models.employee import Employee
+from subprocess import Popen
+import os
 class EmployeeDashboardUI(object):
     def setupUi(self, Form):
         Form.setObjectName("EmployeeDashboard")
@@ -60,12 +62,10 @@ class EmployeeDashboardUI(object):
             }
         ''')
 
-        # Ana layout
         self.main_layout = QtWidgets.QHBoxLayout(Form)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
 
-        # Sol Menü
         self.sidebar_widget = QtWidgets.QWidget()
         self.sidebar_widget.setMaximumWidth(160)
         self.sidebar_widget.setStyleSheet('''
@@ -96,7 +96,6 @@ class EmployeeDashboardUI(object):
         self.sidebar_layout.setContentsMargins(0, 0, 0, 0)
         self.sidebar_layout.setSpacing(0)
 
-        # Menü Butonları
         self.btn_new_expense = QtWidgets.QPushButton("Harcama Yap")
         self.btn_new_expense.setCheckable(True)
         self.btn_past_requests = QtWidgets.QPushButton("Geçmiş Harcamalar")
@@ -105,12 +104,10 @@ class EmployeeDashboardUI(object):
         self.sidebar_layout.addWidget(self.btn_new_expense)
         self.sidebar_layout.addWidget(self.btn_past_requests)
 
-        # Spacer ve Çıkış Butonu
         self.sidebar_layout.addStretch()
         self.btn_logout = QtWidgets.QPushButton("Çıkış Yap")
         self.sidebar_layout.addWidget(self.btn_logout)
 
-        # Ana İçerik
         self.content_widget = QtWidgets.QStackedWidget()
         self.content_widget.setStyleSheet('''
             QWidget {
@@ -118,11 +115,9 @@ class EmployeeDashboardUI(object):
             }
         ''')
 
-        # Harcamalar Tabı
         self.new_expenses_page = QtWidgets.QWidget()
         self.expenses_layout = QtWidgets.QVBoxLayout(self.new_expenses_page)
         
-        # Başlık
         self.expenses_header = QtWidgets.QWidget()
         self.expenses_header_layout = QtWidgets.QHBoxLayout(self.expenses_header)
         self.expenses_label = QtWidgets.QLabel("Harcama Kalemleri")
@@ -161,12 +156,11 @@ class EmployeeDashboardUI(object):
         # Miktar giriş alanı
         self.amount_label = QtWidgets.QLabel("Harcama Miktarı (TL):")
         self.amount_input = QtWidgets.QDoubleSpinBox()
-        self.amount_input.setRange(0, 100000)
+        self.amount_input.setRange(0, 10000000)
         self.amount_input.setDecimals(2)
         self.amount_input.setSingleStep(10)
         self.expense_form_layout.addRow(self.amount_label, self.amount_input)
         
-        # Açıklama alanı
         """
         self.description_label = QtWidgets.QLabel("Açıklama:")
         self.description_input = QtWidgets.QTextEdit()
@@ -174,7 +168,6 @@ class EmployeeDashboardUI(object):
         self.expense_form_layout.addRow(self.description_label, self.description_input)
         """
         
-        # Talep oluştur butonu
         self.submit_button_layout = QtWidgets.QHBoxLayout()
         self.submit_button_layout.addStretch()
         self.submit_button = QtWidgets.QPushButton("Talep Oluştur")
@@ -205,7 +198,6 @@ class EmployeeDashboardUI(object):
         self.past_requests_header_layout.addWidget(self.past_requests_label)
         self.past_requests_header_layout.addStretch()
         
-        # Yenile butonu
         self.refresh_button = QtWidgets.QPushButton("Talepleri Yenile")
         self.refresh_button.setStyleSheet('''
             QPushButton {
@@ -220,7 +212,6 @@ class EmployeeDashboardUI(object):
         
         self.past_requests_layout.addWidget(self.past_requests_header)
         
-        # Geçmiş talepler tablosu
         self.past_requests_table = QtWidgets.QTableWidget()
         self.past_requests_table.setColumnCount(5)
         self.past_requests_table.setHorizontalHeaderLabels(["ID", "Harcama Kalemi", "Tutar", "Tarih", "Onay Durumu"])
@@ -231,7 +222,6 @@ class EmployeeDashboardUI(object):
         
         self.past_requests_layout.addWidget(self.past_requests_table)
         
-        # Detay kutusu
         self.request_details_group = QtWidgets.QGroupBox("Seçili Talep Detayları")
         self.request_details_group.setStyleSheet("QGroupBox { font-weight: bold; }")
         self.request_details_layout = QtWidgets.QVBoxLayout(self.request_details_group)
@@ -240,32 +230,51 @@ class EmployeeDashboardUI(object):
         self.request_details_label.setAlignment(QtCore.Qt.AlignCenter)
         self.request_details_layout.addWidget(self.request_details_label)
         
+        self.pdf_button_container = QtWidgets.QWidget()
+        self.pdf_button_layout = QtWidgets.QHBoxLayout(self.pdf_button_container)
+        self.pdf_button_layout.setContentsMargins(0, 10, 10, 0)
+        self.download_pdf_button = QtWidgets.QPushButton("Harcama Detay Raporu")
+        self.download_pdf_button.setStyleSheet('''
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                padding: 8px 15px;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+            QPushButton:disabled {
+                background-color: #ccc;
+            }
+        ''')
+        self.download_pdf_button.setEnabled(False)
+        self.download_pdf_button.setToolTip("Harcama henüz onaylanmadığından belge alınamamaktadır")
+        self.pdf_button_layout.addStretch()
+        self.pdf_button_layout.addWidget(self.download_pdf_button)
+        self.pdf_button_layout.addStretch()
+        
+        self.request_details_layout.addWidget(self.pdf_button_container)
+        
         self.past_requests_layout.addWidget(self.request_details_group)
 
-        # Tabları StackedWidget'e Ekle
         self.content_widget.addWidget(self.new_expenses_page)
         self.content_widget.addWidget(self.past_requests_page)
 
-        # Ana Layout'a Ekle
         self.main_layout.addWidget(self.sidebar_widget)
         self.main_layout.addWidget(self.content_widget)
 
-        # Buton Bağlantıları
         self.btn_new_expense.clicked.connect(lambda: self.change_tab(self.new_expenses_page, self.btn_new_expense, self.btn_past_requests))
         self.btn_past_requests.clicked.connect(lambda: self.change_tab(self.past_requests_page, self.btn_past_requests, self.btn_new_expense))
         
-        # Tablo seçim bağlantısı
         self.expense_table.itemSelectionChanged.connect(self.on_expense_selected)
         
-        # Talep oluşturma buton bağlantısı
+        self.download_pdf_button.clicked.connect(self.on_download_pdf_clicked)
+        
         self.submit_button.clicked.connect(self.create_expense_request)
         
-        # Varsayılan Seçim
         self.btn_new_expense.setChecked(True)
         self.content_widget.setCurrentWidget(self.new_expenses_page)
-        
-        # Kullanıcı bilgisi
-        
+                
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
 
@@ -278,76 +287,58 @@ class EmployeeDashboardUI(object):
         active_btn.setChecked(True)
         other_btn.setChecked(False)
         
-        # Harcama sayfasına geçildiğinde kalemleri yükle
         if page == self.new_expenses_page and self.current_user:
             self.load_expense_items()
-        # Geçmiş talepler sayfasına geçildiğinde talepleri yükle
         elif page == self.past_requests_page and self.current_user:
             self.load_past_expense_requests()
-    
+            
     def set_user(self, user_data):
-        """Çalışanın bilgilerini ayarlar ve ilişkili verileri yükler"""
-        self.current_user = user_data
+
+        self.employee = Employee(user_data)
+        self.current_user = user_data  
+        
         if self.current_user:
             self.load_expense_items()
-            # Yenileme butonuna bağlantı ekle
             self.refresh_button.clicked.connect(self.load_past_expense_requests)
-            # Geçmiş talepler tablosunda seçim değişikliği için bağlantı
             self.past_requests_table.itemSelectionChanged.connect(self.on_past_request_selected)
-    
+            
     def load_expense_items(self):
-        """Çalışanın birimine ait harcama kalemlerini yükler"""
         if not self.current_user or 'birimId' not in self.current_user:
             return
         
         try:
-            db = Database()
-            birim_id = self.current_user['birimId']
+            department_budget_data = self.employee.get_expense_items()
             
-            # Birim-Kalem bütçe bilgilerini al
-            budget_data = db.get_unit_and_kalem_budget()
-            
-            # Tabloyu temizle
+            if department_budget_data is None:
+                return
+                
             self.expense_table.setRowCount(0)
             
-            # Kullanıcının birimindeki bütçeleri filtrele
             row_count = 0
-            for item in budget_data:
-                if item['Birim Adı'] == self.get_birim_name(birim_id):
-                    self.expense_table.insertRow(row_count)
-                    
-                    # Kalem ID'sini bulmak için veritabanına sorgu yap
-                    db.cursor.execute("SELECT kalemId FROM harcamakalemi WHERE kalemAd = ?", 
-                                    (item['Kalem Adı'],))
-                    kalem_id = db.cursor.fetchone()
-                    kalem_id = kalem_id[0] if kalem_id else "-"
-                    
-                    # Kalem ID sütunu
-                    id_item = QTableWidgetItem(str(kalem_id))
-                    self.expense_table.setItem(row_count, 0, id_item)
-                    
-                    # Kalem Adı sütunu
-                    name_item = QTableWidgetItem(item['Kalem Adı'])
-                    self.expense_table.setItem(row_count, 1, name_item)
-                    
-                    # Departman Bütçesi sütunu
-                    total_budget = item['Tahsis Edilen Bütçe']
-                    budget_item = QTableWidgetItem(f"{total_budget:.2f} TL")
-                    self.expense_table.setItem(row_count, 2, budget_item)
-                    
-                    # Kalan Bütçe sütunu
-                    remaining_budget = item['Kalan Bütçe']
-                    remaining_item = QTableWidgetItem(f"{remaining_budget:.2f} TL")
-                    if remaining_budget < 0:
-                        remaining_item.setForeground(QtGui.QColor(255, 0, 0))  # Negatif değerler kırmızı
-                    self.expense_table.setItem(row_count, 3, remaining_item)
-                    
-                    row_count += 1
+            for item in department_budget_data:
+                self.expense_table.insertRow(row_count)
+                
+                kalem_id = item['kalemId'] if 'kalemId' in item else "-"
+                id_item = QTableWidgetItem(str(kalem_id))
+                self.expense_table.setItem(row_count, 0, id_item)
+                
+                name_item = QTableWidgetItem(item['Kalem Adı'])
+                self.expense_table.setItem(row_count, 1, name_item)
+                
+                total_budget = item['Tahsis Edilen Bütçe']
+                budget_item = QTableWidgetItem(f"{total_budget:.2f} TL")
+                self.expense_table.setItem(row_count, 2, budget_item)
+                
+                remaining_budget = item['Kalan Bütçe']
+                remaining_item = QTableWidgetItem(f"{remaining_budget:.2f} TL")
+                if remaining_budget < 0:
+                    remaining_item.setForeground(QtGui.QColor(255, 0, 0))  
+                self.expense_table.setItem(row_count, 3, remaining_item)
+                
+                row_count += 1
             
-            # ID sütununu gizle
             self.expense_table.setColumnHidden(0, True)
             
-            # Kullanıcıya bilgilendirme
             if row_count == 0:
                 QtWidgets.QMessageBox.information(
                     None, 
@@ -363,38 +354,24 @@ class EmployeeDashboardUI(object):
             )
             
     def get_birim_name(self, birim_id):
-        """Birim ID'sine göre birim adını döndürür"""
-        try:
-            db = Database()
-            db.cursor.execute("SELECT birimIsmi FROM birim WHERE birimId = ?", (birim_id,))
-            result = db.cursor.fetchone()
-            return result[0] if result else "Bilinmeyen Birim"
-        except Exception as e:
-            print(f"Birim adı alınamadı: {str(e)}")
-            return "Bilinmeyen Birim"
+        return self.employee.get_birim_name(birim_id)
         
     
     def on_expense_selected(self):
-        """Tabloda bir kalem seçildiğinde çalışır"""
         selected_rows = self.expense_table.selectedItems()
         if not selected_rows:
             self.selected_item_value.setText("Lütfen tabloda bir kalem seçiniz")
             return
         
-        # Seçilen satırdaki kalem adını al
         row = selected_rows[0].row()
         kalem_id = self.expense_table.item(row, 0).text()
         kalem_adi = self.expense_table.item(row, 1).text()
         kalan_butce_text = self.expense_table.item(row, 3).text()
         kalan_butce = float(kalan_butce_text.replace(" TL", ""))
         
-        # Seçilen kalemi göster
         self.selected_item_value.setText(f"{kalem_adi} (ID: {kalem_id})")
         
-        # Kalan bütçeye göre miktar sınırı belirle
-        self.amount_input.setMaximum(max(0, kalan_butce))
         
-        # Eğer kalan bütçe negatifse veya 0'sa uyarı göster
         if kalan_butce <= 0:
             self.amount_input.setEnabled(False)
             self.submit_button.setEnabled(False)
@@ -406,14 +383,12 @@ class EmployeeDashboardUI(object):
         else:
             self.amount_input.setEnabled(True)
             self.submit_button.setEnabled(True)
-    
+            
     def create_expense_request(self):
-        """Harcama talebi oluşturma fonksiyonu"""
         if not self.current_user:
             QtWidgets.QMessageBox.warning(None, "Hata", "Kullanıcı bilgisi bulunamadı!")
             return
         
-        # Seçilen kalem kontrolü
         selected_rows = self.expense_table.selectedItems()
         if not selected_rows:
             QtWidgets.QMessageBox.warning(None, "Hata", "Lütfen bir harcama kalemi seçiniz!")
@@ -422,112 +397,61 @@ class EmployeeDashboardUI(object):
         row = selected_rows[0].row()
         kalem_id = int(self.expense_table.item(row, 0).text())
         kalem_adi = self.expense_table.item(row, 1).text()
-        
-        # Miktar kontrolü
         amount = self.amount_input.value()
         if amount <= 0:
             QtWidgets.QMessageBox.warning(None, "Hata", "Lütfen geçerli bir miktar giriniz!")
             return
+            
+        result = self.employee.create_expense_request(kalem_id, amount)
         
-        # Açıklama kontrolü
-        """
-        description = self.description_input.toPlainText().strip()
-        if not description:
-            QtWidgets.QMessageBox.warning(None, "Hata", "Lütfen açıklama giriniz!")
-            return
-        """
-        
-        # Harcama talebini veritabanına kaydet
-        try:
-            db = Database()
-            calisan_id = self.current_user['calisanId']
-            birim_id = self.current_user['birimId']
-            
-            # Şimdiki tarih
-            import datetime
-            current_date = datetime.datetime.now().strftime("%Y-%m-%d")
-            
-            # Harcama tablosuna ekle
-            db.cursor.execute(
-                """
-                INSERT INTO harcama 
-                (calisanId, kalemId, birimId, tutar, onayDurumu, tarih) 
-                VALUES (?, ?, ?, ?, ?, ?)
-                """, 
-                (calisan_id, kalem_id, birim_id, amount, "Beklemede", current_date)
-            )
-            db.conn.commit()
-            
-            # Başarılı mesajı
+        if result['status'] == 'success':
             QtWidgets.QMessageBox.information(
                 None, 
                 "Başarılı", 
-                f"Harcama talebiniz başarıyla oluşturuldu!\n\nKalem: {kalem_adi}\nMiktar: {amount:.2f} TL\nDurum: Beklemede"
+                result['message']
             )
             
-            # Formu sıfırla
             self.amount_input.setValue(0)
-            #self.description_input.clear()
             self.expense_table.clearSelection()
             self.selected_item_value.setText("Lütfen tabloda bir kalem seçiniz")
             
-            # Tabloyu güncelle
             self.load_expense_items()
-            
-        except Exception as e:
+        else:
             QtWidgets.QMessageBox.critical(
                 None, 
                 "Hata", 
-                f"Harcama talebi oluşturulurken bir hata oluştu: {str(e)}"
+                result['message']
             )
             
     def load_past_expense_requests(self):
-        """Çalışanın geçmiş harcama taleplerini yükler"""
         if not self.current_user or 'calisanId' not in self.current_user:
             return
         
         try:
-            db = Database()
-            calisan_id = self.current_user['calisanId']
+            expense_requests = self.employee.get_past_expense_requests()
             
-            # Harcama taleplerini al
-            query = """
-            SELECT h.harcamaId, h.kalemId, k.kalemAd, h.tutar, h.tarih, h.onayDurumu
-            FROM harcama h
-            JOIN harcamakalemi k ON h.kalemId = k.kalemId
-            WHERE h.calisanId = ?
-            ORDER BY h.tarih DESC
-            """
-            db.cursor.execute(query, (calisan_id,))
-            expense_requests = db.cursor.fetchall()
-            
-            # Tabloyu temizle
+            if expense_requests is None:
+                return
+                
             self.past_requests_table.setRowCount(0)
             
-            # Talepleri tabloya ekle
             for row_index, request in enumerate(expense_requests):
                 self.past_requests_table.insertRow(row_index)
                 
-                # Talep ID
                 id_item = QTableWidgetItem(str(request[0]))
                 self.past_requests_table.setItem(row_index, 0, id_item)
                 
-                # Kalem Adı
                 kalem_item = QTableWidgetItem(request[2])
                 self.past_requests_table.setItem(row_index, 1, kalem_item)
                 
-                # Tutar
                 amount_item = QTableWidgetItem(f"{request[3]:.2f} TL")
                 self.past_requests_table.setItem(row_index, 2, amount_item)
                 
-                # Tarih
                 date_item = QTableWidgetItem(request[4])
                 self.past_requests_table.setItem(row_index, 3, date_item)
                 
-                # Onay Durumu
                 status_item = QTableWidgetItem(request[5])
                 
-                # Duruma göre renklendirme
                 if request[5] == "Onaylandi":
                     status_item.setForeground(QtGui.QColor(46, 204, 113))
                 elif request[5] == "Reddedildi":
@@ -537,10 +461,8 @@ class EmployeeDashboardUI(object):
                     
                 self.past_requests_table.setItem(row_index, 4, status_item)
             
-            # ID sütununu gizle
             self.past_requests_table.setColumnHidden(0, True)
             
-            # Kullanıcıya bilgilendirme
             if self.past_requests_table.rowCount() == 0:
                 self.request_details_label.setText("Henüz hiç harcama talebiniz bulunmamaktadır.")
         
@@ -552,21 +474,27 @@ class EmployeeDashboardUI(object):
             )
             
     def on_past_request_selected(self):
-        """Geçmiş talep tablosunda bir talep seçildiğinde çalışır"""
         selected_rows = self.past_requests_table.selectedItems()
         if not selected_rows:
             self.request_details_label.setText("Lütfen detaylarını görmek için bir talep seçin")
+            self.download_pdf_button.setEnabled(False)
             return
         
-        # Seçilen satırdaki bilgileri al
         row = selected_rows[0].row()
-        talep_id = self.past_requests_table.item(row, 0).text()
+        talep_id = int(self.past_requests_table.item(row, 0).text())
         kalem_adi = self.past_requests_table.item(row, 1).text()
         tutar = self.past_requests_table.item(row, 2).text()
         tarih = self.past_requests_table.item(row, 3).text()
         durum = self.past_requests_table.item(row, 4).text()
         
-        # Detay bilgisini HTML formatında hazırla
+        if durum.strip() == "Onaylandi":
+            self.download_pdf_button.setEnabled(True)
+            self.download_pdf_button.setToolTip("Harcama raporunu PDF olarak indir")
+            self.selected_expense_id = talep_id  
+        else:
+            self.download_pdf_button.setEnabled(False)
+            self.download_pdf_button.setToolTip("Harcama henüz onaylanmadığından belge alınamamaktadır")
+            
         detail_html = f"""
         <html>
         <head>
@@ -589,6 +517,32 @@ class EmployeeDashboardUI(object):
         </body>
         </html>
         """
-        
-        # Detay etiketini güncelle
         self.request_details_label.setText(detail_html)
+    
+    def on_download_pdf_clicked(self):
+        if not hasattr(self, 'selected_expense_id') or not self.selected_expense_id:
+            QtWidgets.QMessageBox.warning(None, "Hata", "Lütfen önce onaylı bir harcama seçiniz!")
+            return
+        
+        result = self.employee.generate_expense_pdf(self.selected_expense_id)
+        
+        if result['status'] == 'success':
+            QtWidgets.QMessageBox.information(
+                None, 
+                "Başarılı", 
+                "PDF başarıyla oluşturuldu.\nDosya konumu: " + result['path']
+            )
+            
+            
+
+            try:
+                if os.path.exists(result['path']):
+                    Popen(['start', '', result['path']], shell=True)
+            except Exception as e:
+                print(f"PDF açılırken hata: {str(e)}")
+            
+        else:            QtWidgets.QMessageBox.critical(
+                None, 
+                "Hata", 
+                result['message']
+            )
