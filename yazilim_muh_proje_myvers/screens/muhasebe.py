@@ -510,7 +510,7 @@ class MuhasebeDashboardUI(object):
             tazmin_miktar = self.reimburse_amount.value()
 
         db = Database()
-        db.cursor.execute("UPDATE harcama SET onayDurumu = 'Onaylandi', tazminTutari = ? WHERE harcamaId = ?", 
+        db.cursor.execute("UPDATE harcama SET onayDurumu = 'Onaylandi',tazminDurumu='Onaylandi', tazminTutari = ? WHERE harcamaId = ?", 
                         (tazmin_miktar, harcama_id))
         db.conn.commit()
 

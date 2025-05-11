@@ -30,7 +30,7 @@ class Database:
         JOIN birim b ON h.birimId = b.birimId
         JOIN harcamakalemi k ON h.kalemId = k.rowid
         LEFT JOIN birim_kalem_butcesi bkb ON b.birimId = bkb.birimId AND k.kalemId = bkb.kalemId
-        WHERE h.onayDurumu = 'Onaylandi' and (h.tazminTutari = 0 or h.tazminTutari is NULL)
+        WHERE h.onayDurumu = 'Onaylandi' and (h.tazminTutari = 0 or h.tazminTutari is NULL) and h.tazminDurumu = 'Beklemede'
         ORDER BY h.tarih DESC
         """
         self.cursor.execute(query)
@@ -542,7 +542,7 @@ class Database:
     #     # Tüm satırlara başlangıç değeri olarak 500.0 atanıyor
 
     def reject_expense_request(self, expense_id):
-        self.cursor.execute("DELETE FROM harcama WHERE harcamaId = ?", (expense_id,))
+        self.cursor.execute("UPDATE harcama SET tazminDurumu='Reddedildi' WHERE harcamaId = ?", (expense_id,))
         self.conn.commit()
 
     def get_harcamalar_by_birim(self, birim_id, status_filter="Tümü"):

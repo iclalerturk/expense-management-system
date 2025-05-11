@@ -1,0 +1,1 @@
+ALTER TABLE harcama ADD COLUMN tazminDurumu TEXT;
