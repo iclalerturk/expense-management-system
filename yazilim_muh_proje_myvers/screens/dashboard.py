@@ -1,11 +1,10 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QTableWidgetItem
 from models.database import Database
-from collections import defaultdict
 import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-from models.budget_manager import BudgetManager
+from controller.budget_manager import BudgetManager
 import models.tahmin as tahmin
 import re
 class DashboardUI(object):
@@ -171,7 +170,7 @@ class DashboardUI(object):
         self.top_bar_layout.setContentsMargins(20, 10, 20, 10)
         
         # Başlık
-        self.title_label = QtWidgets.QLabel("Yönetici Paneli")
+        self.title_label = QtWidgets.QLabel("Üst Yönetici Paneli")
         self.title_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #333; background-color:white;")
         self.top_bar_layout.addWidget(self.title_label)
         
@@ -444,7 +443,7 @@ class DashboardUI(object):
 
         # Grafik alanını scroll içinde göster
         self.graphic_container = QtWidgets.QWidget()
-        self.graphic_container.setMinimumHeight(1000)  # Daha uzun bir alan oluşturarak scroll etmeyi garantile
+        self.graphic_container.setMinimumHeight(1200)  # Daha uzun bir alan oluşturarak scroll etmeyi garantile
         self.graphic_layout = QtWidgets.QVBoxLayout(self.graphic_container)
         self.graphic_layout.setContentsMargins(15, 15, 15, 15)
         self.graphic_layout.setSpacing(40) 
@@ -1052,7 +1051,7 @@ class DashboardUI(object):
         """)
         button.setMinimumHeight(40)
         return button
-
+    
     def create_summary_card(self, title, value, icon_path, color):
         safe_title = re.sub(r'[^a-zA-Z0-9_]', '_', title.lower())
         
@@ -1142,6 +1141,9 @@ class DashboardUI(object):
                     item = self.employees_table.item(row_index, col_index)
                     item.setBackground(QtGui.QColor(245, 245, 245))  # Alternatif renk
 
+    def set_user(self, user_data):
+        self.current_user = user_data
+    
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Yönetici Paneli"))

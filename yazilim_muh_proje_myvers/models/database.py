@@ -3,7 +3,7 @@ import os
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from collections import defaultdict
-from models.yonetici import Yonetici
+from controller.yonetici import Yonetici
 
 class Database:
     def __init__(self, db_path=None):
