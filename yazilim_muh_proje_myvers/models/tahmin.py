@@ -40,7 +40,7 @@ class TahminGrafikWidget(QtWidgets.QWidget):
         self.layout().addLayout(kontrol_layout)
 
         # Tahmin etiketi
-        self.tahminLabel = QtWidgets.QLabel("Gelecek Ay Tahmini: -")
+        self.tahminLabel = QtWidgets.QLabel("Gelecek Yıl Tahmini: -")
         self.tahminLabel.setStyleSheet("font-weight: bold; font-size: 14px; padding: 6px; color: #2c3e50;")
         self.layout().addWidget(self.tahminLabel)
 
@@ -64,36 +64,48 @@ class TahminGrafikWidget(QtWidgets.QWidget):
 
         df["tarih"] = pd.to_datetime(df["tarih"])
         df.set_index("tarih", inplace=True)
-        df.resample("M").sum()
+        
+        # Yıllık verileri hazırla
+        df_yillik = df.resample("Y").sum()
+        
+        # Yıl bilgisi için indeksi string'e çevir
+        df_yillik = df_yillik.reset_index()
+        df_yillik['yil'] = df_yillik['tarih'].dt.year
+        
+        # Hareketli ortalama
+        df_yillik["hareketli_ortalama"] = df_yillik["tutar"].rolling(window=n).mean()
 
-        df["hareketli_ortalama"] = df["tutar"].rolling(window=n).mean()
-
-        # Gelecek ay tahmini
-        tahmin = df["hareketli_ortalama"].iloc[-1]
+        # Gelecek yıl tahmini
+        tahmin = df_yillik["hareketli_ortalama"].iloc[-1]
         if pd.isna(tahmin):
-            self.tahminLabel.setText("Gelecek Ay Tahmini: Yetersiz veri")
+            self.tahminLabel.setText("Gelecek Yıl Tahmini: Yetersiz veri")
         else:
-            self.tahminLabel.setText(f"Gelecek Ay Tahmini: {tahmin:.2f} TL")
+            self.tahminLabel.setText(f"Gelecek Yıl Tahmini: {tahmin:.2f} TL")
 
+        # Grafik çizimi
         # Önceki grafik varsa kaldır
         if self.canvas:
             self.layout().removeWidget(self.canvas)
             self.canvas.setParent(None)
 
-        # Yeni grafik
         self.figure = Figure(figsize=(6, 4))
         self.canvas = FigureCanvas(self.figure)
         ax = self.figure.add_subplot(111)
 
-        df["tutar"].plot(ax=ax, label="Gerçek Harcama", marker="o")
-        df["hareketli_ortalama"].plot(ax=ax, label=f"{n} Periyotluk Hareketli Ortalama", linestyle="--")
+        # x ekseni için yıl bilgilerini kullan
+        ax.plot(df_yillik['yil'], df_yillik['tutar'], marker='o', label='Yıllık Harcama')
+        ax.plot(df_yillik['yil'], df_yillik['hareketli_ortalama'], linestyle='--', 
+                label=f'{n} Periyotluk Ortalama')
 
-        ax.set_title("Harcama Tahmini - Hareketli Ortalama Yöntemi")
-        ax.set_xlabel("Tarih")
+        ax.set_title("Yıllık Harcama Tahmini - Hareketli Ortalama Yöntemi")
+        ax.set_xlabel("Yıl")
         ax.set_ylabel("Tutar (TL)")
         ax.legend()
-        self.figure.autofmt_xdate()
+        
+        # X eksenindeki yıl etiketlerini ayarla
+        ax.set_xticks(df_yillik['yil'])
+        ax.set_xticklabels(df_yillik['yil'], rotation=45)
 
+        self.figure.tight_layout()
         self.layout().addWidget(self.canvas)
         self.canvas.draw()
-
