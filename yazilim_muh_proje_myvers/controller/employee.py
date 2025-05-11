@@ -1,6 +1,6 @@
 from PyQt5 import QtWidgets
 from models.database import Database
-from models.expense_pdf import ExpensePdfGenerator
+from controller.expense_pdf import ExpensePdfGenerator
 import datetime
 
 class Employee:
@@ -44,7 +44,7 @@ class Employee:
                 if item['Birim Adı'] == birim_name:
                     # Get kalem ID
                     self.db.cursor.execute("SELECT kalemId FROM harcamakalemi WHERE kalemAd = ?", 
-                                 (item['Kalem Adı'],))
+                                (item['Kalem Adı'],))
                     kalem_id = self.db.cursor.fetchone()
                     
                     # Add kalem ID to the item

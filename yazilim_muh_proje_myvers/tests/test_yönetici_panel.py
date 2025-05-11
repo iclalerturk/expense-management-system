@@ -8,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from screens.yönetici_panel import YoneticiPanelUI
 from models.database import Database
-from models.yonetici import Yonetici  # <-- import your model class
+from yazilim_muh_proje_myvers.controller.yonetici import Yonetici
 
 app = QApplication(sys.argv)  # Needed for QWidget-based tests
 

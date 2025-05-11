@@ -6,7 +6,7 @@ from PyQt5 import QtWidgets
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from models.budget_manager import BudgetManager
+from yazilim_muh_proje_myvers.controller.budget_manager import BudgetManager
 
 class TestAddBudget(unittest.TestCase):
     @classmethod

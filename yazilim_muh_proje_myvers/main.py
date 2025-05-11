@@ -43,7 +43,7 @@ class giderApp(QtWidgets.QWidget, LoginUi):
         self.muhasebe_ui.set_user(user)
         
         # Çıkış butonu işlevi
-        self.muhasebe_ui.btn_logout.clicked.connect(self.logout_employee)
+        self.muhasebe_ui.btn_logout.clicked.connect(self.logout_muhasebe)
         
         # Arayüzü göster
         self.muhasebe_window.show()
@@ -53,33 +53,44 @@ class giderApp(QtWidgets.QWidget, LoginUi):
         self.dashboard_window = QtWidgets.QWidget()
         self.dashboard_ui = DashboardUI()
         self.dashboard_ui.setupUi(self.dashboard_window)
+        self.dashboard_ui.set_user(user)
         self.dashboard_ui.btn_home.clicked.connect(self.reopen_dashboard)
+        self.dashboard_ui.btn_logout.clicked.connect(self.logout_dashboard)
         self.dashboard_window.show()
         self.hide()
+    
+    def reopen_dashboard(self):
+        self.dashboard_window.show()
+        self.hide()
+    
+    def logout_dashboard(self):
+        self.dashboard_window.close()
+        self.login_window = giderApp()
+        self.login_window.show()
+        self.close()
 
     def open_employee_dashboard(self, user=None):
         self.employee_window = QtWidgets.QWidget()
         self.employee_ui = EmployeeDashboardUI()
         self.employee_ui.setupUi(self.employee_window)
         self.employee_ui.set_user(user)
-        
-        
-        # Çıkış butonu işlevi
+
         self.employee_ui.btn_logout.clicked.connect(self.logout_employee)
         
-        # Arayüzü göster
         self.employee_window.show()
         self.hide()
 
     def logout_employee(self):
-        # Çalışan arayüzünü kapat ve giriş ekranını göster
-        if hasattr(self, 'employee_window'):
-            self.employee_window.close()
-        self.show()
-
-    def reopen_dashboard(self):
-        self.dashboard_window.show()
-        self.hide()
+        self.employee_window.close()
+        self.login_window = giderApp()
+        self.login_window.show()
+        self.close()
+    
+    def logout_muhasebe(self):
+        self.muhasebe_window.close()
+        self.login_window = giderApp()
+        self.login_window.show()
+        self.close()
 
     def open_yonetici_panel(self, user):
         

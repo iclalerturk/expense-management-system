@@ -1,7 +1,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QTableWidgetItem
 from models.database import Database
-from models.employee import Employee
+from controller.employee import Employee
 from subprocess import Popen
 import os
 class EmployeeDashboardUI(object):
