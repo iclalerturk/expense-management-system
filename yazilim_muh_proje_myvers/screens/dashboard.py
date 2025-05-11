@@ -171,7 +171,7 @@ class DashboardUI(object):
         self.top_bar_layout.setContentsMargins(20, 10, 20, 10)
         
         # Başlık
-        self.title_label = QtWidgets.QLabel("Yönetici Paneli")
+        self.title_label = QtWidgets.QLabel("Üst Yönetim Paneli")
         self.title_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #333; background-color:white;")
         self.top_bar_layout.addWidget(self.title_label)
         
@@ -1144,4 +1144,4 @@ class DashboardUI(object):
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
-        Form.setWindowTitle(_translate("Form", "Yönetici Paneli"))
+        Form.setWindowTitle(_translate("Form", "Üst Yönetim Paneli"))
