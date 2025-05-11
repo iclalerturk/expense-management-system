@@ -510,12 +510,68 @@ class MuhasebeDashboardUI(object):
             tazmin_miktar = self.reimburse_amount.value()
 
         db = Database()
-        db.cursor.execute("UPDATE harcama SET onayDurumu = 'Onaylandi',tazminDurumu='Onaylandi', tazminTutari = ? WHERE harcamaId = ?", 
-                        (tazmin_miktar, harcama_id))
-        db.conn.commit()
 
-        QtWidgets.QMessageBox.information(None, "Onaylandi", f"{tazmin_miktar:.2f} ₺ tutarındaki harcama onaylandı.")
+        # Harcama bilgilerini al
+        db.cursor.execute("SELECT birimId, kalemId FROM harcama WHERE harcamaId = ?", (harcama_id,))
+        result = db.cursor.fetchone()
+        if not result:
+            return
+        birim_id, kalem_id = result
+
+        # Birimin toplam bütçesini ve aşım flag'ini al
+        db.cursor.execute("SELECT totalButce, butceAsildi FROM birim WHERE birimId = ?", (birim_id,))
+        total_butce, butce_asildi = db.cursor.fetchone()
+
+        # Mevcut toplam harcamayı hesapla
+        db.cursor.execute("""
+            SELECT SUM(harcanan_butce) FROM birim_kalem_harcanan_butce
+            WHERE birim_id = ?
+        """, (birim_id,))
+        toplam_harcanan = db.cursor.fetchone()[0] or 0
+
+        # Aşım kontrolü
+        if toplam_harcanan + tazmin_miktar > total_butce:
+            if butce_asildi:
+                QtWidgets.QMessageBox.warning(None, "Bütçe Aşıldı", "Bütçe zaten aşıldı. Bu harcama onaylanamaz.")
+                db.cursor.execute("""
+                    UPDATE harcama 
+                    SET onayDurumu = 'Reddedildi', tazminDurumu = 'Reddedildi'
+                    WHERE harcamaId = ?
+                """, (harcama_id,))
+            else:
+                # İlk defa aşıldıysa flag'i set et
+                db.cursor.execute("UPDATE birim SET butceAsildi = 1 WHERE birimId = ?", (birim_id,))
+        else:
+            # Harcamayı onayla
+            db.cursor.execute("""
+                UPDATE harcama 
+                SET onayDurumu = 'Onaylandi', tazminDurumu = 'Onaylandi', tazminTutari = ? 
+                WHERE harcamaId = ?
+            """, (tazmin_miktar, harcama_id))
+
+            # birim_kalem_harcanan_butce tablosunu güncelle
+            db.cursor.execute("""
+                SELECT id, harcanan_butce FROM birim_kalem_harcanan_butce
+                WHERE birim_id = ? AND harcama_kalem_id = ?
+            """, (birim_id, kalem_id))
+            row = db.cursor.fetchone()
+
+            if row:
+                existing_id, mevcut_butce = row
+                yeni_butce = mevcut_butce + tazmin_miktar
+                db.cursor.execute("""
+                    UPDATE birim_kalem_harcanan_butce SET harcanan_butce = ?
+                    WHERE id = ?
+                """, (yeni_butce, existing_id))
+            else:
+                db.cursor.execute("""
+                    INSERT INTO birim_kalem_harcanan_butce (birim_id, harcama_kalem_id, harcanan_butce)
+                    VALUES (?, ?, ?)
+                """, (birim_id, kalem_id, tazmin_miktar))
+            QtWidgets.QMessageBox.information(None, "Onaylandi", f"{tazmin_miktar:.2f} ₺ tutarındaki harcama onaylandı.")
+        db.conn.commit()
         self.load_approved_expenses_to_table()
+
 
     def on_reject_button_clicked(self):
         selected_row = self.pending_requests_table.currentRow()
