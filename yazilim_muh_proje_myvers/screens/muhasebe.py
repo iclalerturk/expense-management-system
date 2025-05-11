@@ -522,7 +522,9 @@ class MuhasebeDashboardUI(object):
         db.cursor.execute("SELECT limitButce FROM birim_kalem_butcesi WHERE birimId = ?", (birim_id,))
         total_butce = db.cursor.fetchone()[0] or 0
         db.cursor.execute("SELECT butceAsildi FROM birim WHERE birimId = ?", (birim_id,))
-        butce_asildi = db.cursor.fetchone()
+        butce_asildi_row = db.cursor.fetchone()
+        butce_asildi = butce_asildi_row[0] if butce_asildi_row else 0
+
 
         # Mevcut toplam harcamayı hesapla
         db.cursor.execute("""
@@ -541,8 +543,26 @@ class MuhasebeDashboardUI(object):
                     WHERE harcamaId = ?
                 """, (harcama_id,))
             else:
+                QtWidgets.QMessageBox.warning(None, "Bütçe Aşıldı", "Daha sonra bu kalem için yeni harcama talebi yapılamaz.")
                 # İlk defa aşıldıysa flag'i set et
                 db.cursor.execute("UPDATE birim SET butceAsildi = 1 WHERE birimId = ?", (birim_id,))
+                
+                # Kalem adını al
+                db.cursor.execute("SELECT kalemAd FROM harcamakalemi WHERE kalemId = ?", (kalem_id,))
+                kalem_adi_row = db.cursor.fetchone()
+                kalem_adi = kalem_adi_row[0] if kalem_adi_row else f"#{kalem_id}"
+
+                # Bildirim gönder
+                db.cursor.execute("SELECT calisanId FROM calisan WHERE birimId = ?", (birim_id,))
+                kullanicilar = db.cursor.fetchall()
+
+                for (kullanici_id,) in kullanicilar:
+                    mesaj = f"'{kalem_adi}' kaleminin bütçesi aşıldı. Bu kalemden yeni tazmin talebi yapılamaz."
+                    db.cursor.execute("""
+                        INSERT INTO bildirim (kullaniciId, mesaj)
+                        VALUES (?, ?)
+                    """, (kullanici_id, mesaj))
+
         else:
             # Harcamayı onayla
             db.cursor.execute("""

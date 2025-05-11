@@ -31,9 +31,20 @@ INSERT INTO birim_kalem_harcanan_butce (birim_id, harcama_kalem_id, harcanan_but
 (5, 4, 1500.00); -- IT birimi için Ofis Malzemesi harcaması
 
 
-UPDATE birim_kalem_butcesi set maxKisiLimit=500 where birimId = 1 and kalemId = 1;
+UPDATE birim_kalem_butcesi set limitButce=1000 where birimId = 3 and kalemId = 4;
 UPDATE harcama set tutar=400 where harcamaId = 1;
-
+delete from birim_kalem_harcanan_butce where id = 14;
 ALTER TABLE birim ADD COLUMN butceAsildi INTEGER DEFAULT 0;
 
 UPDATE harcama set calisanId = 3 where harcamaId = 24;
+
+CREATE TABLE bildirim (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    kullaniciId INTEGER,
+    mesaj TEXT,
+    okundu INTEGER DEFAULT 0,
+    tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (kullaniciId) REFERENCES calisan(calisanId)
+);
+
+UPDATE harcama SET tazminDurumu='Beklemede', onayDurumu='Onaylandi' WHERE harcamaId=20;
