@@ -179,3 +179,12 @@ UPDATE harcama set tutar=400 where harcamaId = 1;
 ALTER TABLE birim ADD COLUMN butceAsildi INTEGER DEFAULT 0;
 
 UPDATE harcama set calisanId = 3 where harcamaId = 24;
+
+CREATE TABLE bildirim (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    kullaniciId INTEGER,
+    mesaj TEXT,
+    okundu INTEGER DEFAULT 0,
+    tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (kullaniciId) REFERENCES calisan(calisanId)
+);

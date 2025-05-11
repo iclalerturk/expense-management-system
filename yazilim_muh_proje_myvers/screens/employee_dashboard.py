@@ -107,7 +107,37 @@ class EmployeeDashboardUI(object):
         self.sidebar_layout.addStretch()
         self.btn_logout = QtWidgets.QPushButton("Çıkış Yap")
         self.sidebar_layout.addWidget(self.btn_logout)
+        # Bildirim butonu (üst sağ köşe için)
+        self.notification_button = QtWidgets.QPushButton()
+        self.notification_button.setIcon(QtGui.QIcon("images\\bell.png"))  # Zil simgesi, kendi ikon yolunu ver
+        self.notification_button.setIconSize(QtCore.QSize(24, 24))
+        self.notification_button.setFixedSize(40, 40)
+        self.notification_button.setStyleSheet('''
+            QPushButton {
+                border: none;
+                background-color: transparent;
+            }
+            QPushButton:hover {
+                background-color: #e0e0e0;
+                border-radius: 20px;
+            }
+        ''')
 
+        # Bildirim kutusu (başta gizli)
+        self.notification_popup = QtWidgets.QListWidget()
+        self.notification_popup.setWindowFlags(QtCore.Qt.Popup)
+        self.notification_popup.setStyleSheet('''
+            QListWidget {
+                background-color: white;
+                border: 1px solid #ccc;
+                padding: 5px;
+            }
+            QListWidget::item {
+                padding: 10px;
+            }
+        ''')
+        self.notification_popup.addItem("🔔 Henüz bildiriminiz yok.")
+        self.notification_button.clicked.connect(self.toggle_notifications)
         self.content_widget = QtWidgets.QStackedWidget()
         self.content_widget.setStyleSheet('''
             QWidget {
@@ -256,6 +286,7 @@ class EmployeeDashboardUI(object):
         self.request_details_layout.addWidget(self.pdf_button_container)
         
         self.past_requests_layout.addWidget(self.request_details_group)
+        self.expenses_header_layout.addWidget(self.notification_button)
 
         self.content_widget.addWidget(self.new_expenses_page)
         self.content_widget.addWidget(self.past_requests_page)
@@ -356,7 +387,43 @@ class EmployeeDashboardUI(object):
     def get_birim_name(self, birim_id):
         return self.employee.get_birim_name(birim_id)
         
-    
+    def toggle_notifications(self):
+        if self.notification_popup.isVisible():
+            self.notification_popup.hide()
+        else:
+            # Konumu ayarla
+            button_pos = self.notification_button.mapToGlobal(QtCore.QPoint(0, self.notification_button.height()))
+            self.notification_popup.move(button_pos)
+
+            # Önce listeyi temizle
+            self.notification_popup.clear()
+
+            db = Database()
+            db.cursor.execute("""select calisanId from calisan where email = ?""", (self.current_user['email'],))
+            self.kullanici_id = db.cursor.fetchone()[0]
+            db.cursor.execute("""
+                SELECT mesaj, tarih FROM bildirim
+                WHERE kullaniciId = ?
+                ORDER BY tarih DESC
+            """, (self.kullanici_id,))
+            bildirimler = db.cursor.fetchall()
+
+            if not bildirimler:
+                self.notification_popup.addItem("🔔 Henüz bildiriminiz yok.")
+            else:
+                for mesaj, tarih in bildirimler:
+                    self.notification_popup.addItem(f"{mesaj}\n🕒 {tarih}")
+
+                # Tüm bildirimi okundu olarak işaretle
+                db.cursor.execute("""
+                    UPDATE bildirim SET okundu = 1
+                    WHERE kullaniciId = ? AND okundu = 0
+                """, (self.kullanici_id,))
+                db.conn.commit()
+
+            self.notification_popup.show()
+            # self.update_notification_count(0)  # Sayacı sıfırla
+
     def on_expense_selected(self):
         selected_rows = self.expense_table.selectedItems()
         if not selected_rows:
