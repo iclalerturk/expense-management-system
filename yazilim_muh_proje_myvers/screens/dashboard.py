@@ -257,7 +257,7 @@ class DashboardUI(object):
         self.budget_table = QtWidgets.QTableWidget()
         self.budget_table.setAlternatingRowColors(True)
         self.budget_table.setColumnCount(7)
-        self.budget_table.setHorizontalHeaderLabels(["Birim Adı", "Kalem Adı", "Toplam Bütçe", "Kullanılan", "Kalan","Limit Bütçe","Aşım Oranı"])
+        self.budget_table.setHorizontalHeaderLabels(["Birim Adı", "Kalem Adı", "Toplam Bütçe", "Kullanılan", "Kalan", "Kişi Bütçe Limiti", "Aşım Oranı"])
         self.budget_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.budget_table.setEditTriggers(QtWidgets.QAbstractItemView.DoubleClicked | 
                                         QtWidgets.QAbstractItemView.EditKeyPressed)

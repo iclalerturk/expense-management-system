@@ -15,7 +15,7 @@ class BudgetManager:
         for row_index, row in enumerate(data):
             birim_adi = QTableWidgetItem(str(row["Birim Adı"]))
             kalem_adi = QTableWidgetItem(str(row["Kalem Adı"]))
-            limit_butce = row['Limit Bütçe']
+            limit_butce = row['Kişi Bütçe Limiti']
             esik_deger = row['Aşım Oranı']
             # get_unit_and_kalem_budget'den gelen yeni anahtar isimlerini kullan
             toplam_butce = row['Toplam Bütçe'] if 'Toplam Bütçe' in row else row['Tahsis Edilen Bütçe']
@@ -115,7 +115,7 @@ class BudgetManager:
         
         form_layout.addRow("Birim:", birim_combo)
         form_layout.addRow("Harcama Kalemi:", kalem_combo)
-        form_layout.addRow("Limit Bütçe: ", l_butce_input)
+        form_layout.addRow("Kişi Bütçe Limiti ", l_butce_input)
         form_layout.addRow("Bütçe: ", butce_input)
         form_layout.addRow("Aşım Eşik Değeri:", esik_slider_widget)
         
@@ -157,11 +157,17 @@ class BudgetManager:
                 QtWidgets.QMessageBox.warning(None, "Hata", "Lütfen geçerli bir bütçe miktarı giriniz")
                 return
             
+            if l_butce_miktari > butce_miktari:
+                QtWidgets.QMessageBox.warning(None, "Limit Hatası", "Kişi bütçe limiti, toplam bütçeden büyük olamaz!")
+                return
+                
             res = db.add_butce(kalem_adi, birim_id, butce_miktari, l_butce_miktari, esik_deger_slider.value())
             
             if res == "basarili":
                 QtWidgets.QMessageBox.information(None, "Başarılı", "Bütçe başarıyla eklendi")
                 self.load_budget_data()  # Tabloyu yeniler
+            elif res == "limit_hatasi":
+                QtWidgets.QMessageBox.information(None, "Limit Hatası", "Kişi başı bütçe limiti, toplam bütçeden büyük olamaz!")
             elif res == "var":
                 QtWidgets.QMessageBox.warning(None, "Kalem Var", "Bu birim için bu kalem limiti zaten ekli.")
             else:
@@ -267,9 +273,9 @@ class BudgetManager:
         # Form düzeni - etiketlerde düzenlenebilir alanlar belirtiliyor
         form_layout.addRow("Birim (Düzenlenemez):", birim_label)
         form_layout.addRow("Harcama Kalemi (Düzenlenemez):", kalem_label)
-        form_layout.addRow("Birim Bütçe (Düzenlenebilir):", tahsis_butce_input)
         form_layout.addRow("Kullanılan Bütçe (Düzenlenemez):", kullanilan_butce_label)
-        form_layout.addRow("Limit Bütçe (Düzenlenebilir):", l_butce_input)
+        form_layout.addRow("Birim Bütçe (Düzenlenebilir):", tahsis_butce_input)
+        form_layout.addRow("Kişi Bütçe Limiti (Düzenlenebilir):", l_butce_input)
         form_layout.addRow("Aşım Oranı (Düzenlenebilir):", esik_slider_widget)
         
         layout.addLayout(form_layout)
@@ -315,6 +321,8 @@ class BudgetManager:
                 QtWidgets.QMessageBox.warning(None, "Hata", "Belirtilen harcama kalemi bulunamadı")
             elif res == "kayit_yok":
                 QtWidgets.QMessageBox.warning(None, "Hata", "Bu birim ve kalem için bütçe kaydı bulunamadı")
+            elif res == "limit_hatasi":
+                QtWidgets.QMessageBox.information(None, "Limit Hatası", "Kişi başı bütçe limiti, toplam bütçeden büyük olamaz!")
             else:
                 QtWidgets.QMessageBox.critical(None, "Başarısız", f"Bütçe güncellenemedi: {res}")
                 

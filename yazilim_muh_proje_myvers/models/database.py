@@ -342,8 +342,8 @@ class Database:
         SELECT 
             b.birimIsmi,
             k.kalemAd,
-            bkb.limitButce AS limitButce,
-            b.totalButce AS tahsisEdilenButce,
+            bkb.maxKisiLimit AS limitButce,
+            bkb.limitButce AS tahsisEdilenButce,
             bkb.asimOrani AS asimOrani,
             COALESCE(
             (SELECT SUM(h.tutar) 
@@ -375,7 +375,7 @@ class Database:
             result.append({
                 'Birim Adı': birim_adi,
                 'Kalem Adı': kalem_adi,
-                'Limit Bütçe': limit_butce,
+                'Kişi Bütçe Limiti': limit_butce,
                 'Tahsis Edilen Bütçe': tahsis_edilen_butce,
                 'Kullanılan Bütçe': kullanilan_butce,
                 'Kalan Bütçe': kalan_butce,
@@ -394,6 +394,10 @@ class Database:
             if kalem_id:
                 kalem_id = kalem_id[0]
                 
+                if l_butce_miktari > butce_miktari:
+                    connection.close()
+                    return "limit_hatasi"
+                
                 # limit bütçeyi eklemek için sorgu
                 cursor.execute(
                     "SELECT * FROM birim_kalem_butcesi WHERE birimId = ? AND kalemId = ?", 
@@ -406,17 +410,14 @@ class Database:
 
                 # yeni limit bütçeyi ekleme:
                 cursor.execute(
-                    "INSERT INTO birim_kalem_butcesi (birimId, kalemId, limitButce, asimOrani) VALUES (?, ?, ?, ?)",
-                    (birim_id, kalem_id, l_butce_miktari, esik_deger)
-                )
-                # yeni bütçeyi ekleme:
-                cursor.execute(
-                    "INSERT INTO butce (birimId, kalemId, butceMiktari) VALUES (?, ?, ?)",
-                    (birim_id, kalem_id, butce_miktari)
-                )            
+                    "INSERT INTO birim_kalem_butcesi (birimId, kalemId, limitButce, maxKisiLimit, asimOrani) VALUES (?, ?, ?, ?, ?)",
+                    (birim_id, kalem_id, butce_miktari, l_butce_miktari, esik_deger)
+                )         
                 connection.commit()
+                connection.close()
                 return "basarili"
             else:
+                connection.close()
                 return "basarisiz"  # kalem bulunamadı
             
     def edit_limit_butce(self, kalem_adi, birim_id, birim_butce, l_butce_miktari, esik_deger_miktari): #bütçe miktarını düzenlemek yöneticinin görevi, üst yönetim sadece limit bütçeyi düzenleyebiliyor
@@ -432,6 +433,10 @@ class Database:
                 
             kalem_id = kalem_result[0]
             
+            if l_butce_miktari > birim_butce:
+                    connection.close()
+                    return "limit_hatasi"
+            
             cursor.execute(
                 "SELECT * FROM birim_kalem_butcesi WHERE birimId = ? AND kalemId = ?", 
                 (birim_id, kalem_id)
@@ -442,13 +447,8 @@ class Database:
                 return "kayit_yok"
             
             cursor.execute(
-                "UPDATE birim_kalem_butcesi SET limitButce = ?, asimOrani = ? WHERE birimId = ? AND kalemId = ?",
-                (l_butce_miktari, esik_deger_miktari, birim_id, kalem_id)
-            )
-            
-            cursor.execute(
-                "UPDATE butce SET butceMiktari = ? WHERE birimId = ? AND kalemId = ?",
-                (birim_butce, birim_id, kalem_id)
+                "UPDATE birim_kalem_butcesi SET limitButce = ?, maxKisiLimit = ?, asimOrani = ? WHERE birimId = ? AND kalemId = ?",
+                (birim_butce, l_butce_miktari, esik_deger_miktari, birim_id, kalem_id)
             )
             
             connection.commit()
@@ -490,7 +490,7 @@ class Database:
                 return "kayit_yok"
             
             cursor.execute(
-                "DELETE FROM birim_kalem_butcesi WHERE limitButce = ? AND birimId = ? AND kalemId = ?",
+                "DELETE FROM birim_kalem_butcesi WHERE maxKisiLimit = ? AND birimId = ? AND kalemId = ?",
                 (l_butce_miktari, birim_id, kalem_id)
             )
             
@@ -506,8 +506,7 @@ class Database:
         finally:
             if connection:
                 connection.close()
-
-
+                
     # Yönetici - harcama onay ekranında kullanılan :
     # 1
 #     def add_max_kisi_limit(self):
