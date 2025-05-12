@@ -1,7 +1,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QTableWidgetItem, QMessageBox
 from models.database import Database
-
+from controller.muhasebe_class import Muhasebe
 class MuhasebeDashboardUI(object):
     def setupUi(self, Form):
         Form.setObjectName("AccountingDashboard")
@@ -130,19 +130,7 @@ class MuhasebeDashboardUI(object):
         self.pending_header_layout.addWidget(self.pending_label)
         self.pending_header_layout.addStretch()
         
-        # Refresh button
-        self.refresh_pending_button = QtWidgets.QPushButton("Talepleri Yenile")
-        self.refresh_pending_button.setStyleSheet('''
-            QPushButton {
-                background-color: #3498db;
-                padding: 8px 15px;
-            }
-            QPushButton:hover {
-                background-color: #2980b9;
-            }
-        ''')
-        self.pending_header_layout.addWidget(self.refresh_pending_button)
-        
+
         self.pending_requests_layout.addWidget(self.pending_header)
         
         # Pending requests table
@@ -242,6 +230,15 @@ class MuhasebeDashboardUI(object):
         # self.actions_layout.addWidget(self.notes_group)
         
         # Action buttons
+        self.muhasebe = Muhasebe(
+            self.pending_requests_table,          # 1. argüman - tablo
+            self.reimburse_full_radio,            # 2. argüman
+            self.reimburse_amount,                # 3. argüman
+            self.load_approved_expenses_to_table, # 4. argüman
+            user_data=None,                       # 5. argüman - isteğe bağlı
+            parent=self                           # 6. argüman
+        )
+
         self.buttons_layout = QtWidgets.QHBoxLayout()
         
         self.approve_button = QtWidgets.QPushButton("Tazmin Et")
@@ -254,7 +251,7 @@ class MuhasebeDashboardUI(object):
                 background-color: #27ae60;
             }
         ''')
-        self.approve_button.clicked.connect(self.on_approve_button_clicked)
+        self.approve_button.clicked.connect(self.muhasebe.on_approve_button_clicked)
         self.reject_button = QtWidgets.QPushButton("Reddet")
         self.reject_button.setStyleSheet('''
             QPushButton {
@@ -268,7 +265,7 @@ class MuhasebeDashboardUI(object):
         
         self.buttons_layout.addWidget(self.approve_button)
         self.buttons_layout.addWidget(self.reject_button)
-        self.reject_button.clicked.connect(self.on_reject_button_clicked)
+        self.reject_button.clicked.connect(self.muhasebe.on_reject_button_clicked)
         self.actions_layout.addLayout(self.buttons_layout)
         
         self.request_actions_layout.addWidget(self.details_panel, 1)
@@ -287,32 +284,8 @@ class MuhasebeDashboardUI(object):
         self.all_requests_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #2c3e50;")
         self.all_requests_header_layout.addWidget(self.all_requests_label)
         self.all_requests_header_layout.addStretch()
-        #yenile butonu:
-        self.refresh_all_button = QtWidgets.QPushButton("Talepleri Yenile")
-        self.refresh_all_button.setStyleSheet('''
-            QPushButton {
-                background-color: #3498db;
-                padding: 8px 15px;
-            }
-            QPushButton:hover {
-                background-color: #2980b9;
-            }
-        ''')
-        
-        self.export_button = QtWidgets.QPushButton("Dışa Aktar")
-        self.export_button.setStyleSheet('''
-            QPushButton {
-                background-color: #27ae60;
-                padding: 8px 15px;
-            }
-            QPushButton:hover {
-                background-color: #2ecc71;
-            }
-        ''')
-        
-        self.all_requests_header_layout.addWidget(self.refresh_all_button)
-        self.all_requests_header_layout.addWidget(self.export_button)
-        
+
+               
         self.all_requests_layout.addWidget(self.all_requests_header)
         
         self.status_filter = QtWidgets.QComboBox()
@@ -329,9 +302,9 @@ class MuhasebeDashboardUI(object):
         
         # All requests table
         self.all_requests_table = QtWidgets.QTableWidget()
-        self.all_requests_table.setColumnCount(8)
+        self.all_requests_table.setColumnCount(7)
         self.all_requests_table.setHorizontalHeaderLabels([
-            "ID", "Çalışan", "Birim", "Harcama Kalemi", "Tutar", "Tarih", "İşlem Tarihi", "Durum"
+            "ID", "Çalışan", "Birim", "Harcama Kalemi", "Tutar", "Tarih", "Yonetici\nOnay Durumu"
         ])
         self.all_requests_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.all_requests_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
@@ -339,17 +312,8 @@ class MuhasebeDashboardUI(object):
         self.all_requests_table.setAlternatingRowColors(True)
         
         self.all_requests_layout.addWidget(self.all_requests_table)
-        
-        # Detail view
-        self.all_request_details = QtWidgets.QGroupBox("Talep Detayları")
-        self.all_request_details.setMaximumHeight(150)
-        self.all_request_details_layout = QtWidgets.QVBoxLayout(self.all_request_details)
-        
-        self.all_request_detail_label = QtWidgets.QLabel("Detayları görmek için talep seçin")
-        self.all_request_detail_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.all_request_details_layout.addWidget(self.all_request_detail_label)
-        
-        self.all_requests_layout.addWidget(self.all_request_details)
+        self.load_all_approved_requests()
+
 
         self.content_widget.addWidget(self.pending_requests_page)
         self.content_widget.addWidget(self.all_requests_page)
@@ -371,9 +335,16 @@ class MuhasebeDashboardUI(object):
         
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
+        
 
+    def load_all_approved_requests(self):
+        self.all_requests_table.setRowCount(0)
+        data = self.muhasebe.get_approved_expenses()  # controller’dan veri al
 
-  
+        for row_index, row in enumerate(data):
+            self.all_requests_table.insertRow(row_index)
+            for col_index, value in enumerate(row):
+                self.all_requests_table.setItem(row_index, col_index, QtWidgets.QTableWidgetItem(str(value)))
 
     def on_table_row_clicked(self):
         db = Database()
@@ -493,131 +464,6 @@ class MuhasebeDashboardUI(object):
             self.detail_threshold_info.setText(detaylar[6])
             self.detail_karsilanabilecek_tutar_info.setText(f"{detaylar[7]:.2f} ₺")
             self.kalem_combobox.setCurrentText(detaylar[3])
-
-        # Tabloları güncelle
-        self.load_approved_expenses_to_table()
-
-    def on_approve_button_clicked(self):
-        selected_row = self.pending_requests_table.currentRow()
-        if selected_row < 0:
-            return
-
-        harcama_id = int(self.pending_requests_table.item(selected_row, 0).text())
-
-        if self.reimburse_full_radio.isChecked():
-            tazmin_miktar = float(self.detail_amount.text().replace("₺", "").strip())
-        else:
-            tazmin_miktar = self.reimburse_amount.value()
-
-        db = Database()
-
-        # Harcama bilgilerini al
-        db.cursor.execute("SELECT birimId, kalemId FROM harcama WHERE harcamaId = ?", (harcama_id,))
-        result = db.cursor.fetchone()
-        if not result:
-            return
-        birim_id, kalem_id = result
-
-        # Birimin toplam bütçesini ve aşım flag'ini al
-        db.cursor.execute("SELECT limitButce FROM birim_kalem_butcesi WHERE birimId = ?", (birim_id,))
-        total_butce = db.cursor.fetchone()[0] or 0
-        db.cursor.execute("SELECT butceAsildi FROM birim WHERE birimId = ?", (birim_id,))
-        butce_asildi_row = db.cursor.fetchone()
-        butce_asildi = butce_asildi_row[0] if butce_asildi_row else 0
-
-
-        # Mevcut toplam harcamayı hesapla
-        db.cursor.execute("""
-            SELECT SUM(harcanan_butce) FROM birim_kalem_harcanan_butce
-            WHERE birim_id = ?
-        """, (birim_id,))
-        toplam_harcanan = db.cursor.fetchone()[0] or 0
-
-        # Aşım kontrolü
-        if toplam_harcanan + tazmin_miktar > total_butce:
-            if butce_asildi:
-                QtWidgets.QMessageBox.warning(None, "Bütçe Aşıldı", "Bütçe zaten aşıldı. Bu harcama onaylanamaz.")
-                db.cursor.execute("""
-                    UPDATE harcama 
-                    SET onayDurumu = 'Reddedildi', tazminDurumu = 'Reddedildi'
-                    WHERE harcamaId = ?
-                """, (harcama_id,))
-            else:
-                QtWidgets.QMessageBox.warning(None, "Bütçe Aşıldı", "Daha sonra bu kalem için yeni harcama talebi yapılamaz.")
-                # İlk defa aşıldıysa flag'i set et
-                db.cursor.execute("UPDATE birim SET butceAsildi = 1 WHERE birimId = ?", (birim_id,))
-                
-                # Kalem adını al
-                db.cursor.execute("SELECT kalemAd FROM harcamakalemi WHERE kalemId = ?", (kalem_id,))
-                kalem_adi_row = db.cursor.fetchone()
-                kalem_adi = kalem_adi_row[0] if kalem_adi_row else f"#{kalem_id}"
-
-                # Bildirim gönder
-                db.cursor.execute("SELECT calisanId FROM calisan WHERE birimId = ?", (birim_id,))
-                kullanicilar = db.cursor.fetchall()
-
-                for (kullanici_id,) in kullanicilar:
-                    mesaj = f"'{kalem_adi}' kaleminin bütçesi aşıldı. Bu kalemden yeni tazmin talebi yapılamaz."
-                    db.cursor.execute("""
-                        INSERT INTO bildirim (kullaniciId, mesaj)
-                        VALUES (?, ?)
-                    """, (kullanici_id, mesaj))
-
-        else:
-            # Harcamayı onayla
-            db.cursor.execute("""
-                UPDATE harcama 
-                SET onayDurumu = 'Onaylandi', tazminDurumu = 'Onaylandi', tazminTutari = ? 
-                WHERE harcamaId = ?
-            """, (tazmin_miktar, harcama_id))
-
-            # birim_kalem_harcanan_butce tablosunu güncelle
-            db.cursor.execute("""
-                SELECT id, harcanan_butce FROM birim_kalem_harcanan_butce
-                WHERE birim_id = ? AND harcama_kalem_id = ?
-            """, (birim_id, kalem_id))
-            row = db.cursor.fetchone()
-
-            if row:
-                existing_id, mevcut_butce = row
-                yeni_butce = mevcut_butce + tazmin_miktar
-                db.cursor.execute("""
-                    UPDATE birim_kalem_harcanan_butce SET harcanan_butce = ?
-                    WHERE id = ?
-                """, (yeni_butce, existing_id))
-            else:
-                db.cursor.execute("""
-                    INSERT INTO birim_kalem_harcanan_butce (birim_id, harcama_kalem_id, harcanan_butce)
-                    VALUES (?, ?, ?)
-                """, (birim_id, kalem_id, tazmin_miktar))
-            QtWidgets.QMessageBox.information(None, "Onaylandi", f"{tazmin_miktar:.2f} ₺ tutarındaki harcama onaylandı.")
-        db.conn.commit()
-        self.load_approved_expenses_to_table()
-
-
-    def on_reject_button_clicked(self):
-        selected_row = self.pending_requests_table.currentRow()
-        if selected_row < 0:
-            QtWidgets.QMessageBox.warning(None, "Uyarı", "Lütfen reddetmek için bir satır seçin.")
-            return
-
-        cevap = QtWidgets.QMessageBox.question(
-            None, "Onay", "Seçilen harcama tamamen silinecek. Emin misiniz?",
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
-        )
-
-        if cevap == QtWidgets.QMessageBox.No:
-            return
-
-        # Harcama ID'sini al
-        harcama_id = int(self.pending_requests_table.item(selected_row, 0).text())
-
-        # # Veritabanını güncelle
-        db = Database()
-        db.reject_expense_request(harcama_id)
-
-        # Bildirim göster
-        QtWidgets.QMessageBox.information(None, "Reddedildi", "Harcama talebi başarıyla reddedildi.")
 
         # Tabloları güncelle
         self.load_approved_expenses_to_table()
