@@ -506,39 +506,6 @@ class Database:
         finally:
             if connection:
                 connection.close()
-                
-    # Yönetici - harcama onay ekranında kullanılan :
-    # 1
-#     def add_max_kisi_limit(self):
-#         # maxKisiLimit sütunu zaten varsa hata vermemesi için try-except
-#         connection = sqlite3.connect(self.db_path)
-#         cursor = connection.cursor()
-#         try:
-#             cursor.execute("""
-#             INSERT INTO harcama (calisanId, kalemId, birimId, tutar, tazminTutari, onayDurumu, tarih, belgeYolu) VALUES
-# (29, 3, 1, 1300.00, 1300.00, 'Onaylandi', '2022-11-12', 'belgeler/test2022-1.pdf'),
-# (30, 4, 2, 800.00, 800.00, 'Onaylandi', '2022-12-05', 'belgeler/test2022-2.pdf'),
-# (31, 2, 1, 1000.00, 1000.00, 'Onaylandi', '2021-10-15', 'belgeler/test2021-1.pdf'),
-# (32, 3, 4, 1500.00, 1500.00, 'Onaylandi', '2021-11-20', 'belgeler/test2021-2.pdf'),
-# (33, 1, 2, 1800.00, 1800.00, 'Onaylandi', '2020-08-15', 'belgeler/test2020-1.pdf'),
-# (34, 4, 3, 1200.00, 1200.00, 'Onaylandi', '2020-09-12', 'belgeler/test2020-2.pdf'),
-# (35, 2, 1, 2000.00, 2000.00, 'Onaylandi', '2019-06-25', 'belgeler/test2019-1.pdf'),
-# (36, 3, 2, 1100.00, 1100.00, 'Onaylandi', '2019-07-10', 'belgeler/test2019-2.pdf'),
-# (37, 1, 4, 1700.00, 1700.00, 'Onaylandi', '2018-04-20', 'belgeler/test2018-1.pdf'),
-# (38, 2, 3, 900.00, 900.00, 'Onaylandi', '2018-05-15', 'belgeler/test2018-2.pdf');
-
-
-#         """)
-#             print("maxKisiLimit degerler eklendi.")
-#         except sqlite3.OperationalError as e:
-#             print("hata:", e)
-
-#         connection.commit()
-    #     # cursor.execute("SELECT * FROM birim_kalem_butcesi")
-    #     # rows = cursor.fetchall()
-    #     # for row in rows:
-    #     #     print(dict(row))
-    #     # Tüm satırlara başlangıç değeri olarak 500.0 atanıyor
 
     def reject_expense_request(self, expense_id):
         self.cursor.execute("UPDATE harcama SET tazminDurumu='Reddedildi' WHERE harcamaId = ?", (expense_id,))
