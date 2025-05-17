@@ -42,34 +42,28 @@ class Muhasebe:
         birim_id, kalem_id = result
 
         # Birimin toplam bütçesini ve aşım flag'ini al
-        db.cursor.execute("SELECT limitButce FROM birim_kalem_butcesi WHERE birimId = ?", (birim_id,))
+        db.cursor.execute("SELECT totalButce FROM birim WHERE birimId = ?", (birim_id,))
         result = db.cursor.fetchone()
         if not result:
             QtWidgets.QMessageBox.warning(None, "Hata", "Birim bütçe bilgileri bulunamadı.")
             return
-        total_butce = result[0] or 0
+        total_butce = result[0] or 0 
         
         db.cursor.execute("SELECT butceAsildi FROM birim WHERE birimId = ?", (birim_id,))
         butce_asildi_row = db.cursor.fetchone()
         butce_asildi = butce_asildi_row[0] if butce_asildi_row else 0
 
         # Mevcut toplam harcamayı hesapla
-        db.cursor.execute("""
-            SELECT SUM(harcanan_butce) FROM birim_kalem_harcanan_butce
-            WHERE birim_id = ?
-        """, (birim_id,))
+        db.cursor.execute("SELECT SUM(harcanan_butce) FROM birim_kalem_harcanan_butce WHERE birim_id = ?", (birim_id,))
         toplam_harcanan_row = db.cursor.fetchone()
         toplam_harcanan = toplam_harcanan_row[0] or 0
+
 
         # Aşım kontrolü
         if toplam_harcanan + tazmin_miktar > total_butce:
             if butce_asildi:
                 QtWidgets.QMessageBox.warning(None, "Bütçe Aşıldı", "Bütçe zaten aşıldı. Bu harcama onaylanamaz.")
-                db.cursor.execute("""
-                    UPDATE harcama 
-                    SET onayDurumu = 'Reddedildi', tazminDurumu = 'Reddedildi'
-                    WHERE harcamaId = ?
-                """, (harcama_id,))
+                db.cursor.execute("UPDATE harcama SET onayDurumu = 'Reddedildi', tazminDurumu = 'Reddedildi' WHERE harcamaId = ?", (harcama_id,))
             else:
                 QtWidgets.QMessageBox.warning(None, "Bütçe Aşıldı", "Daha sonra bu kalem için yeni harcama talebi yapılamaz.")
                 # İlk defa aşıldıysa flag'i set et
@@ -79,45 +73,39 @@ class Muhasebe:
                 db.cursor.execute("SELECT kalemAd FROM harcamakalemi WHERE kalemId = ?", (kalem_id,))
                 kalem_adi_row = db.cursor.fetchone()
                 kalem_adi = kalem_adi_row[0] if kalem_adi_row else f"#{kalem_id}"
-
+                # Harcamayı onayla
+                db.cursor.execute("UPDATE harcama SET onayDurumu = 'Onaylandi', tazminDurumu = 'Onaylandi', tazminTutari = ? WHERE harcamaId = ?", (tazmin_miktar, harcama_id))
+                # birim_kalem_harcanan_butce tablosunu güncelle
+                db.cursor.execute("SELECT id, harcanan_butce FROM birim_kalem_harcanan_butce WHERE birim_id = ? AND harcama_kalem_id = ?", (birim_id, kalem_id))
+                row = db.cursor.fetchone()
+                if row:
+                    existing_id, mevcut_butce = row
+                    yeni_butce = mevcut_butce + tazmin_miktar
+                    db.cursor.execute("UPDATE birim_kalem_harcanan_butce SET harcanan_butce = ? WHERE id = ?", (yeni_butce, existing_id))
+                else:
+                    db.cursor.execute("INSERT INTO birim_kalem_harcanan_butce (birim_id, harcama_kalem_id, harcanan_butce) VALUES (?, ?, ?) ", (birim_id, kalem_id, tazmin_miktar))
                 # Bildirim gönder
                 db.cursor.execute("SELECT calisanId FROM calisan WHERE birimId = ?", (birim_id,))
                 kullanicilar = db.cursor.fetchall()
 
                 for (kullanici_id,) in kullanicilar:
                     mesaj = f"'{kalem_adi}' kaleminin bütçesi aşıldı. Bu kalemden yeni tazmin talebi yapılamaz."
-                    db.cursor.execute("""
-                        INSERT INTO bildirim (kullaniciId, mesaj)
-                        VALUES (?, ?)
-                    """, (kullanici_id, mesaj))
+                    db.cursor.execute("INSERT INTO bildirim (kullaniciId, mesaj) VALUES (?, ?)", (kullanici_id, mesaj))
 
         else:
             # Harcamayı onayla
-            db.cursor.execute("""
-                UPDATE harcama 
-                SET onayDurumu = 'Onaylandi', tazminDurumu = 'Onaylandi', tazminTutari = ? 
-                WHERE harcamaId = ?
-            """, (tazmin_miktar, harcama_id))
+            db.cursor.execute(" UPDATE harcama SET onayDurumu = 'Onaylandi', tazminDurumu = 'Onaylandi', tazminTutari = ? WHERE harcamaId = ?", (tazmin_miktar, harcama_id))
 
             # birim_kalem_harcanan_butce tablosunu güncelle
-            db.cursor.execute("""
-                SELECT id, harcanan_butce FROM birim_kalem_harcanan_butce
-                WHERE birim_id = ? AND harcama_kalem_id = ?
-            """, (birim_id, kalem_id))
+            db.cursor.execute("SELECT id, harcanan_butce FROM birim_kalem_harcanan_butce WHERE birim_id = ? AND harcama_kalem_id = ?", (birim_id, kalem_id))
             row = db.cursor.fetchone()
 
             if row:
                 existing_id, mevcut_butce = row
                 yeni_butce = mevcut_butce + tazmin_miktar
-                db.cursor.execute("""
-                    UPDATE birim_kalem_harcanan_butce SET harcanan_butce = ?
-                    WHERE id = ?
-                """, (yeni_butce, existing_id))
+                db.cursor.execute("UPDATE birim_kalem_harcanan_butce SET harcanan_butce = ? WHERE id = ?", (yeni_butce, existing_id))
             else:
-                db.cursor.execute("""
-                    INSERT INTO birim_kalem_harcanan_butce (birim_id, harcama_kalem_id, harcanan_butce)
-                    VALUES (?, ?, ?)
-                """, (birim_id, kalem_id, tazmin_miktar))
+                db.cursor.execute("INSERT INTO birim_kalem_harcanan_butce (birim_id, harcama_kalem_id, harcanan_butce) VALUES (?, ?, ?) ", (birim_id, kalem_id, tazmin_miktar))
             QtWidgets.QMessageBox.information(None, "Onaylandi", f"{tazmin_miktar:.2f} ₺ tutarındaki harcama onaylandı.")
         
         db.conn.commit()
@@ -151,14 +139,7 @@ class Muhasebe:
         self.load_approved_expenses_to_table()
 
     def get_approved_expenses(self):
-        query = """
-        SELECT h.harcamaId, c.email, b.birimIsmi, k.kalemAd, h.tutar, h.tarih, h.onayDurumu
-        FROM harcama h
-        JOIN calisan c ON h.calisanId = c.calisanId
-        JOIN birim b ON h.birimId = b.birimId
-        JOIN harcamakalemi k ON h.kalemId = k.kalemId
-        WHERE h.onayDurumu = 'Onaylandi'
-        """
+        query = "SELECT h.harcamaId, c.email, b.birimIsmi, k.kalemAd, h.tutar, h.tarih, h.onayDurumu FROM harcama h JOIN calisan c ON h.calisanId = c.calisanId JOIN birim b ON h.birimId = b.birimId JOIN harcamakalemi k ON h.kalemId = k.kalemId WHERE h.onayDurumu = 'Onaylandi'"
 
         self.db.cursor.execute(query)
         return self.db.cursor.fetchall()
