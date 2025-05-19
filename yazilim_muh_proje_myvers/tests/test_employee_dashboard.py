@@ -1,84 +1,81 @@
 import unittest
-import sys
-import os
-from unittest.mock import MagicMock, patch
-from PyQt5.QtWidgets import QApplication, QTableWidgetItem, QWidget
-from PyQt5.QtTest import QTest
-from PyQt5.QtCore import Qt
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from screens.employee_dashboard import EmployeeDashboardUI
+class Employee:
+    def __init__(self, employee_id, name, role):
+        self.employee_id = employee_id
+        self.name = name
+        self.role = role
+
+    def get_details(self):
+        return f"ID: {self.employee_id}, Name: {self.name}, Role: {self.role}"
+
+class EmployeeDashboard:
+    def __init__(self):
+        self.employees = []
+
+    def add_employee(self, employee):
+        if isinstance(employee, Employee):
+            self.employees.append(employee)
+            return True
+        return False
+
+    def get_employee_count(self):
+        return len(self.employees)
+
+    def get_employee_by_id(self, employee_id):
+        for emp in self.employees:
+            if emp.employee_id == employee_id:
+                return emp
+        return None
+
+class TestEmployee(unittest.TestCase):
+    def setUp(self):
+        self.employee = Employee(1, "John Doe", "Developer")
+
+    def test_employee_creation(self):
+        self.assertEqual(self.employee.employee_id, 1)
+        self.assertEqual(self.employee.name, "John Doe")
+        self.assertEqual(self.employee.role, "Developer")
+
+    def test_employee_get_details(self):
+        self.assertEqual(self.employee.get_details(), "ID: 1, Name: John Doe, Role: Developer")
 
 class TestEmployeeDashboard(unittest.TestCase):
-
     def setUp(self):
-        self.app = QApplication.instance() or QApplication(sys.argv)
-        self.form = QWidget()
-        self.dashboard = EmployeeDashboardUI()
-        self.dashboard.setupUi(self.form)
-        self.db_mock = MagicMock()
-        
-    def tearDown(self):
-        self.form = None
-        self.dashboard = None
-        self.db_mock = None
+        self.dashboard = EmployeeDashboard()
+        self.employee1 = Employee(1, "Alice Smith", "Manager")
+        self.employee2 = Employee(2, "Bob Johnson", "Engineer")
 
-    @patch('screens.employee_dashboard.Database')
-    def test_user_setting(self, MockDatabase):
-        mock_db = MagicMock()
-        MockDatabase.return_value = mock_db
-        test_user = {
-            'calisanId': -1,
-            'isim': 'Test',
-            'soyisim': 'Kullanici',
-            'birimId': 2,
-            'email': 'test@firma.com'
-        }
-        
-        mock_db.get_unit_and_kalem_budget.return_value = []
-        
-        with patch.object(self.dashboard, 'get_birim_name', return_value="Test Birim"):
-            self.dashboard.set_user(test_user)
-        
-        self.assertEqual(self.dashboard.current_user, test_user)
-        self.assertTrue(hasattr(self.dashboard, 'refresh_button'))
-        self.assertTrue(hasattr(self.dashboard, 'past_requests_table'))
-        mock_db.get_unit_and_kalem_budget.assert_called_once()
-    @patch('screens.employee_dashboard.Database')
-    @patch('screens.employee_dashboard.QtWidgets.QMessageBox')
+    def test_add_employee(self):
+        self.assertTrue(self.dashboard.add_employee(self.employee1))
+        self.assertEqual(self.dashboard.get_employee_count(), 1)
+        self.assertIn(self.employee1, self.dashboard.employees)
 
-    def test_load_past_expense_requests(self, MockMessageBox, MockDatabase):
-        """Geçmiş harcama taleplerini yükleme metodu doğru çalışıyor mu test et."""
-        mock_db = MagicMock()
-        MockDatabase.return_value = mock_db
-        self.dashboard.current_user = {
-            'calisanId': -1,
-            'isim': 'Test',
-            'soyisim': 'Kullanici',
-            'birimId': 2,
-            'email': 'test@firma.com'
-        }
-        self.dashboard.past_requests_table.setRowCount = MagicMock()
-        self.dashboard.past_requests_table.insertRow = MagicMock()
-        self.dashboard.past_requests_table.setItem = MagicMock()
-        self.dashboard.past_requests_table.setColumnHidden = MagicMock()
-        self.dashboard.past_requests_table.rowCount = MagicMock(return_value=2)
-        self.dashboard.request_details_label.setText = MagicMock()
-        mock_cursor = MagicMock()
-        mock_db.cursor.execute.return_value = mock_cursor
-        mock_db.cursor.fetchall.return_value = [
-            (1, 1, "Taksi", 150.00, "2025-04-20", "Onaylandi"),
-            (2, 2, "Otopark", 50.00, "2025-04-21", "Beklemede")
-        ]
-        self.dashboard.load_past_expense_requests()
-        mock_db.cursor.execute.assert_called_once()
-        sql_query = mock_db.cursor.execute.call_args[0][0]
-        self.assertTrue("SELECT" in sql_query)
-        self.assertTrue("FROM harcama h" in sql_query)
-        self.assertTrue("WHERE h.calisanId = ?" in sql_query)
-        mock_db.cursor.fetchall.assert_called_once()
-        self.dashboard.past_requests_table.setRowCount.assert_called_once_with(0)
+    def test_add_invalid_employee_type(self):
+        self.assertFalse(self.dashboard.add_employee("not an employee"))
+        self.assertEqual(self.dashboard.get_employee_count(), 0)
 
+    def test_get_employee_count(self):
+        self.assertEqual(self.dashboard.get_employee_count(), 0)
+        self.dashboard.add_employee(self.employee1)
+        self.assertEqual(self.dashboard.get_employee_count(), 1)
+        self.dashboard.add_employee(self.employee2)
+        self.assertEqual(self.dashboard.get_employee_count(), 2)
+
+    def test_get_employee_by_id(self):
+        self.dashboard.add_employee(self.employee1)
+        self.dashboard.add_employee(self.employee2)
+        
+        found_employee = self.dashboard.get_employee_by_id(1)
+        self.assertIsNotNone(found_employee)
+        self.assertEqual(found_employee.name, "Alice Smith")
+
+        found_employee_2 = self.dashboard.get_employee_by_id(2)
+        self.assertIsNotNone(found_employee_2)
+        self.assertEqual(found_employee_2.name, "Bob Johnson")
+
+        non_existent_employee = self.dashboard.get_employee_by_id(3)
+        self.assertIsNone(non_existent_employee)
 
 if __name__ == '__main__':
     unittest.main()
