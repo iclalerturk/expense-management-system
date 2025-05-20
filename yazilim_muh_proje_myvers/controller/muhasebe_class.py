@@ -132,7 +132,7 @@ class Muhasebe:
         # Use the class database instance
         self.db.reject_expense_request(harcama_id)
 
-        # Bildirim göster
+        # Bildirim göster+
         QtWidgets.QMessageBox.information(None, "Reddedildi", "Harcama talebi başarıyla reddedildi.")
 
         # Tabloları güncelle

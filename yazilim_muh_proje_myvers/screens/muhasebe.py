@@ -220,15 +220,6 @@ class MuhasebeDashboardUI(object):
         
         self.actions_layout.addWidget(self.reimburse_group)
         
-        # # Notes field
-        # self.notes_group = QtWidgets.QGroupBox("Notlar")
-        # self.notes_layout = QtWidgets.QVBoxLayout(self.notes_group)
-        
-        # self.notes_edit = QtWidgets.QTextEdit()
-        # self.notes_layout.addWidget(self.notes_edit)
-        
-        # self.actions_layout.addWidget(self.notes_group)
-        
         # Action buttons
         self.muhasebe = Muhasebe(
             self.pending_requests_table,          # 1. argüman - tablo
