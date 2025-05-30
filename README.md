@@ -1,4 +1,4 @@
-#expense management system
+# expense management system
 We have created a system that allows employees to record and reimburse their expenses for business purposes after they are approved. The system tracks expenses by unit and item and submits them to managers for approval.
 
 ![image](https://github.com/user-attachments/assets/2696d12d-b3a9-43ae-a47d-a81e52d3c235)
